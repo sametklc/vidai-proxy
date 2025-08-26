@@ -12,12 +12,13 @@ const upload = multer(); // memoryStorage
 
 // ==== ENV ====
 const PORT = process.env.PORT || 3000;
-const FAL_API_KEY = process.env.FAL_API_KEY; // Fal Dashboard > API Keys
-// Model ID'lerini Fal'dan seçeceksin (aşağıdaki varsayılanlar örnek)
+const FAL_API_KEY = process.env.FAL_API_KEY;
+
+// Model ID'lerini Fal'dan seçeceksin (örnekler)
 const MODEL_IMAGE2VIDEO =
-  process.env.FAL_MODEL_IMAGE2VIDEO || "fal-ai/minimax-video/image-to-video";
+  process.env.FAL_MODEL_IMAGE2VIDEO || "fal-ai/veo2/image-to-video";
 const MODEL_TEXT2VIDEO =
-  process.env.FAL_MODEL_TEXT2VIDEO || "fal-ai/wan-t2v";
+  process.env.FAL_MODEL_TEXT2VIDEO || "fal-ai/wan/v2.2-a14b/text-to-video/lora";
 
 // Kuyruk mu (queue) eşzamanlı mı (sync)?
 // Önerilen: queue (1). Sync sadece kısa işler için.
@@ -26,10 +27,11 @@ const USE_QUEUE = process.env.FAL_USE_QUEUE === "0" ? false : true;
 // Opsiyonel: webhook kullanacaksan servisinin public URL'i
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 
-// Küçük yardımcılar
+// ---- Helpers ----
 const FAL_BASE = USE_QUEUE ? "https://queue.fal.run" : "https://fal.run";
 
 function falUrl(modelId) {
+  // queue + webhook
   if (USE_QUEUE && WEBHOOK_URL) {
     const u = new URL(`${FAL_BASE}/${modelId}`);
     u.searchParams.set("fal_webhook", `${WEBHOOK_URL}/fal/webhook`);
@@ -41,6 +43,12 @@ function falUrl(modelId) {
 function toDataUrl(buffer, mime = "application/octet-stream") {
   const b64 = buffer.toString("base64");
   return `data:${mime};base64,${b64}`;
+}
+
+/** "fal-ai/minimax-video/image-to-video" -> "fal-ai/minimax-video" */
+function baseModelId(modelId) {
+  const parts = (modelId || "").split("/");
+  return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : modelId;
 }
 
 // Fal çağrısı (JSON body)
@@ -60,22 +68,6 @@ async function falPostJSON(modelId, body) {
   return res.json();
 }
 
-// Fal queue sonucu (request_id ile)
-async function falResult(modelId, requestId) {
-  const res = await fetch(
-    `https://queue.fal.run/${modelId}/requests/${requestId}`,
-    {
-      method: "GET",
-      headers: { "Authorization": `Key ${FAL_API_KEY}` },
-    }
-  );
-  if (!res.ok) {
-    const errTxt = await res.text().catch(() => "");
-    throw new Error(`Fal Result HTTP ${res.status} ${errTxt}`);
-  }
-  return res.json();
-}
-
 // farklı model yanıtlarını tek formatta toplar
 function pickVideoUrl(any) {
   const r = any?.response || any;
@@ -90,6 +82,8 @@ function pickVideoUrl(any) {
   return candidates[0] || null;
 }
 
+// ---- Routes ----
+
 // Health
 app.get("/healthz", (_, res) => res.json({ ok: true }));
 
@@ -101,16 +95,14 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     // Fal çoğu video modelinde dosya yerine URL ister: base64 data URL
     const image_url = toDataUrl(req.file.buffer, req.file.mimetype);
-
     const payload = { prompt, image_url };
 
     const data = await falPostJSON(MODEL_IMAGE2VIDEO, payload);
 
-    // queue ise request_id döner; sync ise doğrudan response
     if (USE_QUEUE) {
       return res.json({
         request_id: data.request_id,
-        job_id: data.request_id, // Android için kolaylık
+        job_id: data.request_id, // Android kolaylığı
         response_url: data.response_url,
         status_url: data.status_url,
       });
@@ -135,7 +127,7 @@ app.post("/video/generate_text", async (req, res) => {
     if (USE_QUEUE) {
       return res.json({
         request_id: data.request_id,
-        job_id: data.request_id, // Android için kolaylık
+        job_id: data.request_id,
         response_url: data.response_url,
         status_url: data.status_url,
       });
@@ -150,12 +142,34 @@ app.post("/video/generate_text", async (req, res) => {
 });
 
 // === 3) Queue Sonucu (Android polling) ===
+// /video/result/:id?type=image|text
 app.get("/video/result/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const data = await falResult(MODEL_IMAGE2VIDEO, id); // istersen model seçimini query ile yap
+    const type = (req.query.type === "text") ? "text" : "image";
+
+    const modelId = (type === "text") ? MODEL_TEXT2VIDEO : MODEL_IMAGE2VIDEO;
+    const baseId  = baseModelId(modelId); // SUBPATH YOK!
+
+    const url = `https://queue.fal.run/${baseId}/requests/${id}`;
+    const r = await fetch(url, {
+      method: "GET",
+      headers: { "Authorization": `Key ${FAL_API_KEY}` },
+    });
+
+    if (!r.ok) {
+      const txt = await r.text().catch(() => "");
+      throw new Error(`Fal Result HTTP ${r.status} ${txt || ""}`.trim());
+    }
+
+    const data = await r.json();
     const video_url = pickVideoUrl(data);
-    res.json({ video_url, raw: data });
+    res.json({
+      status: data.status,
+      video_url,
+      request_id: id,
+      raw: data
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: String(e.message || e) });
@@ -182,3 +196,4 @@ app.listen(PORT, () => {
     WEBHOOK_URL,
   });
 });
+
