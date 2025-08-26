@@ -1,5 +1,4 @@
-// index.js  (Node 18+; package.json: { "type": "module" })
-import 'dotenv/config';
+// index.js
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -12,26 +11,20 @@ const upload = multer(); // memoryStorage
 
 // ==== ENV ====
 const PORT = process.env.PORT || 3000;
-const FAL_API_KEY = process.env.FAL_API_KEY;
-
-// Model ID'lerini Fal'dan seçeceksin (örnekler)
+const FAL_API_KEY = process.env.FAL_API_KEY; // Fal Dashboard > API Keys
+// Senin kullandığın modeller
 const MODEL_IMAGE2VIDEO =
   process.env.FAL_MODEL_IMAGE2VIDEO || "fal-ai/veo2/image-to-video";
 const MODEL_TEXT2VIDEO =
-  process.env.FAL_MODEL_TEXT2VIDEO || "fal-ai/wan/v2.2-a14b/text-to-video/lora";
+  process.env.FAL_MODEL_TEXT2VIDEO || "fal-ai/wan/v2.2-a14b/text-to-video";
 
-// Kuyruk mu (queue) eşzamanlı mı (sync)?
-// Önerilen: queue (1). Sync sadece kısa işler için.
+// Kuyruk mu sync mi
 const USE_QUEUE = process.env.FAL_USE_QUEUE === "0" ? false : true;
-
-// Opsiyonel: webhook kullanacaksan servisinin public URL'i
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 
-// ---- Helpers ----
 const FAL_BASE = USE_QUEUE ? "https://queue.fal.run" : "https://fal.run";
 
 function falUrl(modelId) {
-  // queue + webhook
   if (USE_QUEUE && WEBHOOK_URL) {
     const u = new URL(`${FAL_BASE}/${modelId}`);
     u.searchParams.set("fal_webhook", `${WEBHOOK_URL}/fal/webhook`);
@@ -45,18 +38,12 @@ function toDataUrl(buffer, mime = "application/octet-stream") {
   return `data:${mime};base64,${b64}`;
 }
 
-/** "fal-ai/minimax-video/image-to-video" -> "fal-ai/minimax-video" */
-function baseModelId(modelId) {
-  const parts = (modelId || "").split("/");
-  return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : modelId;
-}
-
-// Fal çağrısı (JSON body)
+// Fal çağrısı
 async function falPostJSON(modelId, body) {
   const res = await fetch(falUrl(modelId), {
     method: "POST",
     headers: {
-      "Authorization": `Key ${FAL_API_KEY}`,
+      Authorization: `Key ${FAL_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
@@ -68,7 +55,23 @@ async function falPostJSON(modelId, body) {
   return res.json();
 }
 
-// farklı model yanıtlarını tek formatta toplar
+// Fal polling
+async function falResult(modelId, requestId) {
+  const res = await fetch(
+    `https://queue.fal.run/${modelId}/requests/${requestId}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Key ${FAL_API_KEY}` },
+    }
+  );
+  if (!res.ok) {
+    const errTxt = await res.text().catch(() => "");
+    throw new Error(`Fal Result HTTP ${res.status} ${errTxt}`);
+  }
+  return res.json();
+}
+
+// response normalizasyonu
 function pickVideoUrl(any) {
   const r = any?.response || any;
   const candidates = [
@@ -82,8 +85,6 @@ function pickVideoUrl(any) {
   return candidates[0] || null;
 }
 
-// ---- Routes ----
-
 // Health
 app.get("/healthz", (_, res) => res.json({ ok: true }));
 
@@ -91,18 +92,25 @@ app.get("/healthz", (_, res) => res.json({ ok: true }));
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     const prompt = req.body.prompt || "";
-    if (!req.file) return res.status(400).json({ error: "image file required" });
+    if (!req.file) {
+      return res.status(400).json({ error: "image file required" });
+    }
 
-    // Fal çoğu video modelinde dosya yerine URL ister: base64 data URL
     const image_url = toDataUrl(req.file.buffer, req.file.mimetype);
-    const payload = { prompt, image_url };
+
+    // ✅ Fal modelin istediği format
+    const payload = {
+      input: {
+        prompt,
+        image_url,
+      },
+    };
 
     const data = await falPostJSON(MODEL_IMAGE2VIDEO, payload);
 
     if (USE_QUEUE) {
       return res.json({
         request_id: data.request_id,
-        job_id: data.request_id, // Android kolaylığı
         response_url: data.response_url,
         status_url: data.status_url,
       });
@@ -122,12 +130,18 @@ app.post("/video/generate_text", async (req, res) => {
     const { prompt } = req.body || {};
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    const data = await falPostJSON(MODEL_TEXT2VIDEO, { prompt });
+    // ✅ Fal modelin istediği format
+    const payload = {
+      input: {
+        prompt,
+      },
+    };
+
+    const data = await falPostJSON(MODEL_TEXT2VIDEO, payload);
 
     if (USE_QUEUE) {
       return res.json({
         request_id: data.request_id,
-        job_id: data.request_id,
         response_url: data.response_url,
         status_url: data.status_url,
       });
@@ -142,41 +156,19 @@ app.post("/video/generate_text", async (req, res) => {
 });
 
 // === 3) Queue Sonucu (Android polling) ===
-// /video/result/:id?type=image|text
 app.get("/video/result/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const type = (req.query.type === "text") ? "text" : "image";
-
-    const modelId = (type === "text") ? MODEL_TEXT2VIDEO : MODEL_IMAGE2VIDEO;
-    const baseId  = baseModelId(modelId); // SUBPATH YOK!
-
-    const url = `https://queue.fal.run/${baseId}/requests/${id}`;
-    const r = await fetch(url, {
-      method: "GET",
-      headers: { "Authorization": `Key ${FAL_API_KEY}` },
-    });
-
-    if (!r.ok) {
-      const txt = await r.text().catch(() => "");
-      throw new Error(`Fal Result HTTP ${r.status} ${txt || ""}`.trim());
-    }
-
-    const data = await r.json();
+    const data = await falResult(MODEL_IMAGE2VIDEO, id); // default image2video
     const video_url = pickVideoUrl(data);
-    res.json({
-      status: data.status,
-      video_url,
-      request_id: id,
-      raw: data
-    });
+    res.json({ video_url, raw: data });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: String(e.message || e) });
   }
 });
 
-// === 4) (Opsiyonel) Fal Webhook ===
+// === 4) Fal Webhook (opsiyonel) ===
 app.post("/fal/webhook", express.raw({ type: "*/*" }), async (req, res) => {
   try {
     const raw = req.body?.toString?.() || "";
@@ -196,4 +188,3 @@ app.listen(PORT, () => {
     WEBHOOK_URL,
   });
 });
-
