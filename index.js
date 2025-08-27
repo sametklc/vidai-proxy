@@ -13,13 +13,13 @@ const upload = multer(); // memoryStorage
 const PORT = process.env.PORT || 3000;
 const FAL_API_KEY = process.env.FAL_API_KEY;
 
-// Modeller (ENV varsa onu kullanır)
+// Modeller
 const MODEL_IMAGE2VIDEO =
   process.env.FAL_MODEL_IMAGE2VIDEO || "fal-ai/veo2/image-to-video";
 const MODEL_TEXT2VIDEO =
   process.env.FAL_MODEL_TEXT2VIDEO || "fal-ai/wan/v2.2-a14b/text-to-video";
 
-// Kuyruk önerilir (1). 0 verirsen sync dener.
+// Kuyruk önerilir
 const USE_QUEUE = process.env.FAL_USE_QUEUE === "0" ? false : true;
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 
@@ -72,15 +72,27 @@ app.get("/healthz", (_, res) => res.json({ ok: true, i2v: MODEL_IMAGE2VIDEO, t2v
 // === 1) IMAGE -> VIDEO ===
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
-    const prompt = req.body.prompt || "";
+    const prompt = (req.body.prompt || "").trim();
+    if (!prompt) return res.status(400).json({ error: "prompt required" });
     if (!req.file) return res.status(400).json({ error: "image file required" });
 
-    const image_url = toDataUrl(req.file.buffer, req.file.mimetype);
-    const payload = { input: { prompt, image_url } };
+    // 3.9MB üstünü engelle (base64 şişmesi nedeniyle Fal 4MB sınırına takmamak için)
+    if (req.file.size > 3_900_000) {
+      return res.status(413).json({ error: "Image too large. Please use a smaller image (<3.9MB)." });
+    }
 
-    console.log("[I2V] payload.input keys:", Object.keys(payload.input));
+    const image_url = toDataUrl(req.file.buffer, req.file.mimetype);
+
+    // 🔑 Fal (veo2) top-level paramlar bekliyor
+    const payload = {
+      prompt,
+      image_url,
+      // opsiyonel: duration, size, seed ...
+    };
+
+    console.log("[I2V] promptLen=", prompt.length);
+
     const data = await falPostJSON(MODEL_IMAGE2VIDEO, payload);
-    console.log("[I2V] fal response keys:", Object.keys(data || {}));
 
     if (USE_QUEUE) {
       return res.json({
@@ -101,14 +113,18 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 // === 2) TEXT -> VIDEO ===
 app.post("/video/generate_text", async (req, res) => {
   try {
-    const { prompt } = req.body || {};
+    const prompt = (req.body.prompt || "").trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    const payload = { input: { prompt } };
+    // 🔑 Fal (wan) top-level 'prompt' bekliyor
+    const payload = {
+      prompt,
+      // opsiyonel: duration, fps, size ...
+    };
 
-    console.log("[T2V] payload.input keys:", Object.keys(payload.input));
+    console.log("[T2V] promptLen=", prompt.length);
+
     const data = await falPostJSON(MODEL_TEXT2VIDEO, payload);
-    console.log("[T2V] fal response keys:", Object.keys(data || {}));
 
     if (USE_QUEUE) {
       return res.json({
@@ -127,8 +143,6 @@ app.post("/video/generate_text", async (req, res) => {
 });
 
 // === 3) RESULT (polling) ===
-// Tercih: /video/result?status_url=<FAL_STATUS_URL>
-// Alternatif: /video/result/:id?type=image|text
 app.get("/video/result/:id?", async (req, res) => {
   try {
     const statusUrl = req.query.status_url;
