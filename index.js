@@ -11,8 +11,9 @@ const upload = multer(); // memoryStorage
 
 // ==== ENV ====
 const PORT = process.env.PORT || 3000;
-const FAL_API_KEY = process.env.FAL_API_KEY; // Fal Dashboard > API Keys
-// Senin kullandığın modeller
+const FAL_API_KEY = process.env.FAL_API_KEY;
+
+// Modeller (ENV’de varsa onu kullanır; yoksa bu fallback'ler kullanılır)
 const MODEL_IMAGE2VIDEO =
   process.env.FAL_MODEL_IMAGE2VIDEO || "fal-ai/veo2/image-to-video";
 const MODEL_TEXT2VIDEO =
@@ -24,6 +25,7 @@ const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 
 const FAL_BASE = USE_QUEUE ? "https://queue.fal.run" : "https://fal.run";
 
+// ---- Helpers ----
 function falUrl(modelId) {
   if (USE_QUEUE && WEBHOOK_URL) {
     const u = new URL(`${FAL_BASE}/${modelId}`);
@@ -33,12 +35,17 @@ function falUrl(modelId) {
   return `${FAL_BASE}/${modelId}`;
 }
 
+// "fal-ai/veo2/image-to-video" -> "fal-ai/veo2"
+function baseModelId(modelId) {
+  const parts = (modelId || "").split("/");
+  return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : modelId;
+}
+
 function toDataUrl(buffer, mime = "application/octet-stream") {
   const b64 = buffer.toString("base64");
   return `data:${mime};base64,${b64}`;
 }
 
-// Fal çağrısı
 async function falPostJSON(modelId, body) {
   const res = await fetch(falUrl(modelId), {
     method: "POST",
@@ -51,22 +58,6 @@ async function falPostJSON(modelId, body) {
   if (!res.ok) {
     const errTxt = await res.text().catch(() => "");
     throw new Error(`Fal HTTP ${res.status} ${errTxt}`);
-  }
-  return res.json();
-}
-
-// Fal polling
-async function falResult(modelId, requestId) {
-  const res = await fetch(
-    `https://queue.fal.run/${modelId}/requests/${requestId}`,
-    {
-      method: "GET",
-      headers: { Authorization: `Key ${FAL_API_KEY}` },
-    }
-  );
-  if (!res.ok) {
-    const errTxt = await res.text().catch(() => "");
-    throw new Error(`Fal Result HTTP ${res.status} ${errTxt}`);
   }
   return res.json();
 }
@@ -86,7 +77,7 @@ function pickVideoUrl(any) {
 }
 
 // Health
-app.get("/healthz", (_, res) => res.json({ ok: true }));
+app.get("/healthz", (_, res) => res.json({ ok: true, model_i2v: MODEL_IMAGE2VIDEO, model_t2v: MODEL_TEXT2VIDEO }));
 
 // === 1) IMAGE -> VIDEO ===
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
@@ -95,16 +86,10 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "image file required" });
     }
-
     const image_url = toDataUrl(req.file.buffer, req.file.mimetype);
 
-    // ✅ Fal modelin istediği format
-    const payload = {
-      input: {
-        prompt,
-        image_url,
-      },
-    };
+    // Fal (veo2) beklenen format
+    const payload = { input: { prompt, image_url } };
 
     const data = await falPostJSON(MODEL_IMAGE2VIDEO, payload);
 
@@ -130,12 +115,8 @@ app.post("/video/generate_text", async (req, res) => {
     const { prompt } = req.body || {};
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // ✅ Fal modelin istediği format
-    const payload = {
-      input: {
-        prompt,
-      },
-    };
+    // Fal (wan) beklenen format
+    const payload = { input: { prompt } };
 
     const data = await falPostJSON(MODEL_TEXT2VIDEO, payload);
 
@@ -156,12 +137,35 @@ app.post("/video/generate_text", async (req, res) => {
 });
 
 // === 3) Queue Sonucu (Android polling) ===
+// /video/result/:id?type=image|text  --> type yoksa image kabul eder
 app.get("/video/result/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const data = await falResult(MODEL_IMAGE2VIDEO, id); // default image2video
+    const type = (req.query.type === "text") ? "text" : "image";
+
+    const modelId = (type === "text") ? MODEL_TEXT2VIDEO : MODEL_IMAGE2VIDEO;
+    const baseId  = baseModelId(modelId); // SUBPATH YOK!
+
+    const url = `https://queue.fal.run/${baseId}/requests/${id}`;
+    const r = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: `Key ${FAL_API_KEY}` },
+    });
+
+    if (!r.ok) {
+      const txt = await r.text().catch(() => "");
+      throw new Error(`Fal Result HTTP ${r.status} ${txt}`.trim());
+    }
+
+    const data = await r.json();
     const video_url = pickVideoUrl(data);
-    res.json({ video_url, raw: data });
+
+    res.json({
+      status: data.status,
+      video_url,
+      request_id: id,
+      raw: data
+    });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: String(e.message || e) });
