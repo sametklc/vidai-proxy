@@ -27,12 +27,12 @@ const FAL_BASE = USE_QUEUE ? "https://queue.fal.run" : "https://fal.run";
 
 // ---- Helpers ----
 function falUrl(modelId) {
+  const u = new URL(`${FAL_BASE}/${modelId}`);
   if (USE_QUEUE && WEBHOOK_URL) {
-    const u = new URL(`${FAL_BASE}/${modelId}`);
+    // Fal webhook’larını kullanmak istersen
     u.searchParams.set("fal_webhook", `${WEBHOOK_URL}/fal/webhook`);
-    return u.toString();
   }
-  return `${FAL_BASE}/${modelId}`;
+  return u.toString();
 }
 
 // "fal-ai/veo2/image-to-video" -> "fal-ai/veo2"
@@ -67,7 +67,7 @@ function pickVideoUrl(any) {
 }
 
 // Health
-app.get("/healthz", (_, res) => res.json({ ok: true, i2v: MODEL_IMAGE2VIDEO, t2v: MODEL_TEXT2VIDEO }));
+app.get("/healthz", (_, res) => res.json({ ok: true, use_queue: USE_QUEUE, i2v: MODEL_IMAGE2VIDEO, t2v: MODEL_TEXT2VIDEO }));
 
 // === 1) IMAGE -> VIDEO ===
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
@@ -83,24 +83,28 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     const image_url = toDataUrl(req.file.buffer, req.file.mimetype);
 
-    // 🔑 Fal (veo2) top-level paramlar bekliyor
+    // 🔑 Fal queue protokolü: body.input altında
     const payload = {
-      prompt,
-      image_url,
-      // opsiyonel: duration, size, seed ...
+      input: {
+        prompt,
+        image_url,
+        // opsiyonel: aspect_ratio: "auto", duration: "5s" ...
+      }
     };
 
-    console.log("[I2V] promptLen=", prompt.length);
+    console.log("[I2V] use_queue=", USE_QUEUE, " promptLen=", prompt.length);
 
     const data = await falPostJSON(MODEL_IMAGE2VIDEO, payload);
 
     if (USE_QUEUE) {
+      // queue submit: request_id/status_url döner
       return res.json({
         request_id: data.request_id,
         response_url: data.response_url,
         status_url: data.status_url,
       });
     } else {
+      // (Nadiren) sync/subscribe kullanıyorsan
       const video_url = pickVideoUrl(data);
       return res.json({ video_url, raw: data });
     }
@@ -116,13 +120,15 @@ app.post("/video/generate_text", async (req, res) => {
     const prompt = (req.body.prompt || "").trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // 🔑 Fal (wan) top-level 'prompt' bekliyor
+    // 🔑 Fal queue protokolü: body.input altında
     const payload = {
-      prompt,
-      // opsiyonel: duration, fps, size ...
+      input: {
+        prompt,
+        // opsiyonel: duration, fps, size ...
+      }
     };
 
-    console.log("[T2V] promptLen=", prompt.length);
+    console.log("[T2V] use_queue=", USE_QUEUE, " promptLen=", prompt.length);
 
     const data = await falPostJSON(MODEL_TEXT2VIDEO, payload);
 
