@@ -1,4 +1,4 @@
-// index.js  (v8-fallback-response-url)
+// index.js  (v9-result-response-verb-fallback)
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -75,14 +75,14 @@ async function falPostJSONSubmit(modelId, body) {
   try { return JSON.parse(txt); } catch { return { response: txt }; }
 }
 
-const VERSION = "v8-fallback-response-url";
+const VERSION = "v9-result-response-verb-fallback";
 app.get("/healthz", (_req, res) => res.json({
   ok: true, version: VERSION, use_queue: USE_QUEUE,
   i2v: MODEL_IMAGE2VIDEO, t2v: MODEL_TEXT2VIDEO
 }));
 app.get("/", (_req, res) => res.send(`OK ${VERSION}`));
 
-// Basit test formu
+// Test formları
 app.get("/test-i2v", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.end(`
@@ -160,13 +160,13 @@ app.post("/video/generate_text", async (req, res) => {
   }
 });
 
-// === 3) RESULT (status + response_url + fallback denemeleri) ===
+// === 3) RESULT (status + response_url + fallback + /response GET/POST) ===
 app.get("/video/result/:id?", async (req, res) => {
   try {
     const headers = { Authorization: `Key ${FAL_API_KEY}` };
     const qStatusUrl = req.query.status_url;
 
-    // 1) STATUS ÇEK
+    // 1) STATUS
     let statusResp;
     if (qStatusUrl) {
       console.log("[RESULT] status via status_url:", qStatusUrl);
@@ -193,50 +193,60 @@ app.get("/video/result/:id?", async (req, res) => {
 
     const isDone = (s) => ["COMPLETED","SUCCEEDED","SUCCESS","DONE"].includes((s || "").toUpperCase());
     if (!isDone(status)) {
-      console.log("[RESULT] not done yet:", status);
       return res.json({ status, video_url: null, raw: statusData });
     }
-
     if (video_url) {
-      console.log("[RESULT] done with url (from status).");
       return res.json({ status, video_url, raw: statusData });
     }
 
-    // 2) DONE ama URL yok → response_url'i çek
-    const baseI2V = baseModelId(MODEL_IMAGE2VIDEO);              // fal-ai/veo2
-    const tailI2V = tailModelPath(MODEL_IMAGE2VIDEO);            // image-to-video
-    const baseT2V = baseModelId(MODEL_TEXT2VIDEO);               // fal-ai/wan
-    const tailT2V = tailModelPath(MODEL_TEXT2VIDEO);             // text-to-video/lora (ör.)
+    // 2) DONE ama URL yok → response tara
+    const baseI2V = baseModelId(MODEL_IMAGE2VIDEO);       // fal-ai/veo2
+    const tailI2V = tailModelPath(MODEL_IMAGE2VIDEO);     // image-to-video
+    const baseT2V = baseModelId(MODEL_TEXT2VIDEO);        // fal-ai/wan
+    const tailT2V = tailModelPath(MODEL_TEXT2VIDEO);      // text-to-video/lora (ör.)
 
-    const statusUrl = qStatusUrl || ""; // varsa elimizde
+    const statusUrl = qStatusUrl || "";
     const idMatch   = statusUrl.match(/\/requests\/([^/]+)\/status$/);
     const reqId     = idMatch ? idMatch[1] : (statusData?.request_id || "");
 
-    // Öncelikli response_url
     const respUrl =
       statusData?.response_url ||
       statusData?.response?.response_url ||
       (qStatusUrl ? qStatusUrl.replace(/\/status$/, "") : null);
 
-    // Fallback adayları (404 için)
-    const candidates = [];
-    if (respUrl) candidates.push(respUrl);
+    // Aday URL’leri hazırla
+    const cands = [];
 
-    // Eğer response_url yanlış “base” ile dönmüşse, “tail” ekleyerek dene:
+    // Önce response_url düz
+    if (respUrl) cands.push({ url: respUrl, method: "GET" });
+    if (respUrl) cands.push({ url: `${respUrl}/response`, method: "GET" });
+    if (respUrl) cands.push({ url: `${respUrl}/response`, method: "POST" });
+
     if (reqId) {
-      // I2V tam path
-      candidates.push(`${FAL_QUEUE}/${baseI2V}/${tailI2V}/requests/${reqId}`);
-      // T2V tam path
-      candidates.push(`${FAL_QUEUE}/${baseT2V}/${tailT2V}/requests/${reqId}`);
-      // Sadece base’ler
-      candidates.push(`${FAL_QUEUE}/${baseI2V}/requests/${reqId}`);
-      candidates.push(`${FAL_QUEUE}/${baseT2V}/requests/${reqId}`);
+      // base
+      cands.push({ url: `${FAL_QUEUE}/${baseI2V}/requests/${reqId}`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseI2V}/requests/${reqId}/response`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseI2V}/requests/${reqId}/response`, method: "POST" });
+
+      // base + tail (tam path)
+      cands.push({ url: `${FAL_QUEUE}/${baseI2V}/${tailI2V}/requests/${reqId}`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseI2V}/${tailI2V}/requests/${reqId}/response`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseI2V}/${tailI2V}/requests/${reqId}/response`, method: "POST" });
+
+      // WAN tarafı da denensin (bazı id’ler karışabiliyor)
+      cands.push({ url: `${FAL_QUEUE}/${baseT2V}/requests/${reqId}`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseT2V}/requests/${reqId}/response`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseT2V}/requests/${reqId}/response`, method: "POST" });
+
+      cands.push({ url: `${FAL_QUEUE}/${baseT2V}/${tailT2V}/requests/${reqId}`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseT2V}/${tailT2V}/requests/${reqId}/response`, method: "GET" });
+      cands.push({ url: `${FAL_QUEUE}/${baseT2V}/${tailT2V}/requests/${reqId}/response`, method: "POST" });
     }
 
-    for (const url of candidates) {
+    for (const c of cands) {
       try {
-        console.log("[RESULT] fetch response candidate:", url);
-        const r2 = await fetch(url, { headers });
+        console.log("[RESULT] fetch response candidate:", c.method, c.url);
+        const r2 = await fetch(c.url, { method: c.method, headers });
         const txt2 = await r2.text().catch(() => "");
         if (!r2.ok) {
           console.warn("[RESULT] candidate failed:", r2.status, txt2?.slice?.(0, 200));
@@ -245,7 +255,6 @@ app.get("/video/result/:id?", async (req, res) => {
         let respData; try { respData = JSON.parse(txt2); } catch { respData = { response: txt2 }; }
         const resolvedUrl = pickVideoUrl(respData);
         if (resolvedUrl) {
-          console.log("[RESULT] resolved via candidate.");
           return res.json({ status: respData?.status || status, video_url: resolvedUrl, raw: respData });
         }
       } catch (e) {
@@ -253,7 +262,6 @@ app.get("/video/result/:id?", async (req, res) => {
       }
     }
 
-    console.log("[RESULT] done but no url found.");
     return res.json({ status, video_url: null, raw: statusData });
   } catch (e) {
     console.error("[RESULT ERROR]", e.message);
