@@ -1,4 +1,4 @@
-// index.js  (v7-robust-result+model-diff)
+// index.js  (v8-fallback-response-url)
 import express from "express";
 import cors from "cors";
 import multer from "multer";
@@ -6,38 +6,34 @@ import multer from "multer";
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" })); // form için
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Her isteği logla (debug için süper yararlı)
+// Ingress log
 app.use((req, _res, next) => {
   console.log("[INGRESS]", req.method, req.path, "ct=", req.headers["content-type"]);
   next();
 });
 
-const upload = multer(); // memoryStorage
+const upload = multer();
 
 // ==== ENV ====
 const PORT = process.env.PORT || 3000;
 const FAL_API_KEY = process.env.FAL_API_KEY;
 
-// Modeller (senin kullandıkların)
+// Modeller (seninkiler)
 const MODEL_IMAGE2VIDEO = process.env.FAL_MODEL_IMAGE2VIDEO || "fal-ai/veo2/image-to-video";
 const MODEL_TEXT2VIDEO  = process.env.FAL_MODEL_TEXT2VIDEO  || "fal-ai/wan/v2.2-a14b/text-to-video/lora";
 
 // Kuyruk önerilir
-const USE_QUEUE  = process.env.FAL_USE_QUEUE === "0" ? false : true;
+const USE_QUEUE = process.env.FAL_USE_QUEUE === "0" ? false : true;
 
-// Fal endpoints
 const FAL_DIRECT = "https://fal.run";
 const FAL_QUEUE  = "https://queue.fal.run";
 
-// ---- Helpers ----
 function isWan(modelId) {
-  // WAN ailesi prompt'u top-level ister (Fal docs & önceki 422 deneyimine göre)
   return (modelId || "").startsWith("fal-ai/wan/");
 }
 function submitUrl(modelId) {
-  // Queue ise /requests'a POST
   return USE_QUEUE ? `${FAL_QUEUE}/${modelId}/requests` : `${FAL_DIRECT}/${modelId}`;
 }
 // "fal-ai/veo2/image-to-video" -> "fal-ai/veo2"
@@ -45,35 +41,29 @@ function baseModelId(modelId) {
   const p = (modelId || "").split("/");
   return p.length >= 2 ? `${p[0]}/${p[1]}` : modelId;
 }
+// "fal-ai/veo2/image-to-video" -> "image-to-video"
+function tailModelPath(modelId) {
+  const p = (modelId || "").split("/");
+  return p.length >= 3 ? p.slice(2).join("/") : "";
+}
 function toDataUrl(buf, mime = "application/octet-stream") {
   const b64 = buf.toString("base64");
   return `data:${mime};base64,${b64}`;
 }
-
-// En yaygın alanları tarayıp video URL bulur
 function pickVideoUrl(any) {
   const r = any?.response || any;
   const cands = [
-    r?.video_url,
-    r?.video?.url,
-    r?.videos?.[0]?.url,
-    r?.output?.[0]?.url,
-    r?.data?.video_url,
-    r?.media?.[0]?.url,
-    r?.result?.video_url,
-    r?.result?.url
+    r?.video_url, r?.video?.url, r?.videos?.[0]?.url, r?.output?.[0]?.url,
+    r?.data?.video_url, r?.media?.[0]?.url, r?.result?.video_url, r?.result?.url
   ].filter(Boolean);
   return cands[0] || null;
 }
-
 async function falPostJSONSubmit(modelId, body) {
   const url = submitUrl(modelId);
   const headers = { Authorization: `Key ${FAL_API_KEY}`, "Content-Type": "application/json" };
-
-  // Sansürlü log
   const clone = JSON.parse(JSON.stringify(body));
-  if (clone?.input?.image_url) clone.input.image_url = "[[base64-data-url]]";
-  if (clone?.image_url) clone.image_url = "[[base64-data-url]]";
+  if (clone?.input?.image_url) clone.input.image_url = "[[base64]]";
+  if (clone?.image_url) clone.image_url = "[[base64]]";
   console.log("[FAL SUBMIT]", { url, modelId, use_queue: USE_QUEUE, body: clone });
 
   const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
@@ -85,21 +75,20 @@ async function falPostJSONSubmit(modelId, body) {
   try { return JSON.parse(txt); } catch { return { response: txt }; }
 }
 
-// Health + version
-const VERSION = "v7-robust-result+model-diff";
+const VERSION = "v8-fallback-response-url";
 app.get("/healthz", (_req, res) => res.json({
   ok: true, version: VERSION, use_queue: USE_QUEUE,
   i2v: MODEL_IMAGE2VIDEO, t2v: MODEL_TEXT2VIDEO
 }));
 app.get("/", (_req, res) => res.send(`OK ${VERSION}`));
 
-// --- Basit test formları ---
+// Basit test formu
 app.get("/test-i2v", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.end(`
-    <h3>Image → Video (queue)</h3>
+    <h3>Image → Video</h3>
     <form method="POST" action="/video/generate_image" enctype="multipart/form-data">
-      <div>Prompt: <input name="prompt" style="width:420px" value="cinematic zoom out of a mountain lake"/></div>
+      <div>Prompt: <input name="prompt" value="cinematic zoom out" style="width:420px"/></div>
       <div>Image: <input type="file" name="image" accept="image/*"/></div>
       <button type="submit">Submit</button>
     </form>
@@ -108,9 +97,9 @@ app.get("/test-i2v", (_req, res) => {
 app.get("/test-t2v", (_req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.end(`
-    <h3>Text → Video (queue)</h3>
+    <h3>Text → Video</h3>
     <form method="POST" action="/video/generate_text">
-      <div>Prompt: <input name="prompt" style="width:420px" value="a cat dancing on the street, cinematic"/></div>
+      <div>Prompt: <input name="prompt" value="a cat dancing on the street" style="width:420px"/></div>
       <button type="submit">Submit</button>
     </form>
   `);
@@ -119,9 +108,7 @@ app.get("/test-t2v", (_req, res) => {
 // === 1) IMAGE -> VIDEO ===
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
-    console.log("[I2V IN] ct=", req.headers["content-type"], "keys:", Object.keys(req.body || {}));
     console.log("[I2V IN] file?", !!req.file, req.file ? { size: req.file.size, mime: req.file.mimetype } : null);
-
     const prompt = (req.body.prompt || "").trim();
     console.log("[I2V IN] prompt len:", prompt.length);
 
@@ -130,8 +117,7 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     if (req.file.size > 3_900_000) return res.status(413).json({ error: "Image too large (<3.9MB)." });
 
     const image_url = toDataUrl(req.file.buffer, req.file.mimetype);
-
-    // Veo2 (queue) -> input:{ prompt, image_url }
+    // Veo2: input:{ prompt, image_url }
     const payload = { input: { prompt, image_url } };
 
     const data = await falPostJSONSubmit(MODEL_IMAGE2VIDEO, payload);
@@ -152,19 +138,12 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 // === 2) TEXT -> VIDEO ===
 app.post("/video/generate_text", async (req, res) => {
   try {
-    console.log("[T2V IN] ct=", req.headers["content-type"], "keys:", Object.keys(req.body || {}));
     const prompt = (req.body.prompt || "").trim();
     console.log("[T2V IN] prompt len:", prompt.length);
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    let payload;
-    if (isWan(MODEL_TEXT2VIDEO)) {
-      // WAN → top-level prompt
-      payload = { prompt };
-    } else {
-      // (örn: veo2 text-to-video kullanılsaydı) input:{ prompt }
-      payload = { input: { prompt } };
-    }
+    // WAN → top-level prompt
+    const payload = isWan(MODEL_TEXT2VIDEO) ? { prompt } : { input: { prompt } };
 
     const data = await falPostJSONSubmit(MODEL_TEXT2VIDEO, payload);
 
@@ -181,19 +160,18 @@ app.post("/video/generate_text", async (req, res) => {
   }
 });
 
-// === 3) RESULT (polling): her zaman response_url'i de çek ===
+// === 3) RESULT (status + response_url + fallback denemeleri) ===
 app.get("/video/result/:id?", async (req, res) => {
   try {
     const headers = { Authorization: `Key ${FAL_API_KEY}` };
     const qStatusUrl = req.query.status_url;
 
-    // 1) STATUS
+    // 1) STATUS ÇEK
     let statusResp;
     if (qStatusUrl) {
-      console.log("[RESULT] status via status_url");
+      console.log("[RESULT] status via status_url:", qStatusUrl);
       statusResp = await fetch(qStatusUrl, { headers });
     } else {
-      // id + type yolu (status_url yoksa)
       const id   = req.params.id;
       const type = (req.query.type === "text") ? "text" : "image";
       const modelId = (type === "text") ? MODEL_TEXT2VIDEO : MODEL_IMAGE2VIDEO;
@@ -214,35 +192,69 @@ app.get("/video/result/:id?", async (req, res) => {
     let video_url = pickVideoUrl(statusData);
 
     const isDone = (s) => ["COMPLETED","SUCCEEDED","SUCCESS","DONE"].includes((s || "").toUpperCase());
+    if (!isDone(status)) {
+      console.log("[RESULT] not done yet:", status);
+      return res.json({ status, video_url: null, raw: statusData });
+    }
 
-    // 2) DONE & hâlâ URL yoksa → response_url'i çek
-    if (isDone(status) && !video_url) {
-      const respUrl =
-        statusData?.response_url ||
-        statusData?.response?.response_url ||
-        (qStatusUrl ? qStatusUrl.replace(/\/status$/, "") : null);
+    if (video_url) {
+      console.log("[RESULT] done with url (from status).");
+      return res.json({ status, video_url, raw: statusData });
+    }
 
-      if (respUrl) {
-        console.log("[RESULT] fetching response_url:", respUrl);
-        const r2 = await fetch(respUrl, { headers });
+    // 2) DONE ama URL yok → response_url'i çek
+    const baseI2V = baseModelId(MODEL_IMAGE2VIDEO);              // fal-ai/veo2
+    const tailI2V = tailModelPath(MODEL_IMAGE2VIDEO);            // image-to-video
+    const baseT2V = baseModelId(MODEL_TEXT2VIDEO);               // fal-ai/wan
+    const tailT2V = tailModelPath(MODEL_TEXT2VIDEO);             // text-to-video/lora (ör.)
+
+    const statusUrl = qStatusUrl || ""; // varsa elimizde
+    const idMatch   = statusUrl.match(/\/requests\/([^/]+)\/status$/);
+    const reqId     = idMatch ? idMatch[1] : (statusData?.request_id || "");
+
+    // Öncelikli response_url
+    const respUrl =
+      statusData?.response_url ||
+      statusData?.response?.response_url ||
+      (qStatusUrl ? qStatusUrl.replace(/\/status$/, "") : null);
+
+    // Fallback adayları (404 için)
+    const candidates = [];
+    if (respUrl) candidates.push(respUrl);
+
+    // Eğer response_url yanlış “base” ile dönmüşse, “tail” ekleyerek dene:
+    if (reqId) {
+      // I2V tam path
+      candidates.push(`${FAL_QUEUE}/${baseI2V}/${tailI2V}/requests/${reqId}`);
+      // T2V tam path
+      candidates.push(`${FAL_QUEUE}/${baseT2V}/${tailT2V}/requests/${reqId}`);
+      // Sadece base’ler
+      candidates.push(`${FAL_QUEUE}/${baseI2V}/requests/${reqId}`);
+      candidates.push(`${FAL_QUEUE}/${baseT2V}/requests/${reqId}`);
+    }
+
+    for (const url of candidates) {
+      try {
+        console.log("[RESULT] fetch response candidate:", url);
+        const r2 = await fetch(url, { headers });
         const txt2 = await r2.text().catch(() => "");
         if (!r2.ok) {
-          console.error("[RESULT ERR resp]", r2.status, txt2?.slice?.(0, 400));
-          return res.status(r2.status).send(txt2 || "error");
+          console.warn("[RESULT] candidate failed:", r2.status, txt2?.slice?.(0, 200));
+          continue;
         }
         let respData; try { respData = JSON.parse(txt2); } catch { respData = { response: txt2 }; }
-        video_url = pickVideoUrl(respData);
-        const finalStatus = respData?.status || status;
-        console.log("[RESULT] done; url?", !!video_url, "status:", finalStatus);
-        return res.json({ status: finalStatus, video_url, raw: respData });
-      } else {
-        console.log("[RESULT] no response_url present.");
+        const resolvedUrl = pickVideoUrl(respData);
+        if (resolvedUrl) {
+          console.log("[RESULT] resolved via candidate.");
+          return res.json({ status: respData?.status || status, video_url: resolvedUrl, raw: respData });
+        }
+      } catch (e) {
+        console.warn("[RESULT] candidate error:", e.message);
       }
     }
 
-    // 3) Status verisini döndür
-    console.log("[RESULT] status only; url?", !!video_url, "status:", status);
-    return res.json({ status, video_url, raw: statusData });
+    console.log("[RESULT] done but no url found.");
+    return res.json({ status, video_url: null, raw: statusData });
   } catch (e) {
     console.error("[RESULT ERROR]", e.message);
     res.status(500).json({ error: String(e.message || e) });
