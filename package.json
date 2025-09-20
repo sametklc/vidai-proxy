@@ -1,11 +1,9 @@
 {
-  "name": "vid-webhook",
-  "private": true,
+  "name": "vidai-proxy",
   "type": "module",
-  "scripts": { "start": "node index.js" },
   "dependencies": {
-    "cors": "^2.8.5",
     "express": "^4.19.2",
-    "multer": "^1.4.5-lts.2"
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2"
   }
 }
