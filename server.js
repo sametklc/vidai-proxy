@@ -1,11 +1,6 @@
-// server.js — vidai-proxy (Node 20+)
-// Özellikler:
-// - Text→Video: google/veo-3 (slug'dan latest version ID'yi otomatik çeker)
-// - Image→Video: pixverse/pixverse-v5 (slug'dan latest version ID'yi otomatik çeker)
-// - İstersen doğrudan VERSION_ID'leri ENV'den verebilirsin (override eder)
-// - input alanı farklarını tolere etmek için image flow'da input_image → image → image_url sırasıyla dener
-// - Hataları "upstream <code>: <body>" formatında net döndürür
-// - İsteğe bağlı webhook altyapısı hazır (BASE_PUBLIC_URL verilir ve alttaki yorumlar açılırsa)
+// server.js (Node 20+, ESM) — vidai-proxy
+// Text->Video: google/veo-3 (gerekirse fallback: google/veo-3-fast)
+// Image->Video: pixverse/pixverse-v5 (gerekirse fallback: pixverse/pixverse-v4.5)
 
 import express from "express";
 import multer from "multer";
@@ -16,34 +11,25 @@ const app = express();
 app.use(express.json({ limit: "16mb" }));
 const upload = multer();
 
-// ----------------- ENV -----------------
+// -------- ENV --------
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
-if (!REPLICATE_TOKEN) {
-  console.error("FATAL: REPLICATE_API_TOKEN is missing");
-}
+if (!REPLICATE_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
-// Slug’lar (senin istediğin modeller)
-const TEXT_SLUG_DEFAULT  = "google/veo-3";         // Text→Video
-const IMAGE_SLUG_DEFAULT = "pixverse/pixverse-v5"; // Image→Video
+const TEXT_SLUG_PRIMARY   = process.env.TEXT_SLUG  || "google/veo-3";
+const TEXT_SLUG_FALLBACK  = "google/veo-3-fast"; // çoğu hesapta açık :contentReference[oaicite:3]{index=3}
+const IMAGE_SLUG_PRIMARY  = process.env.IMAGE_SLUG || "pixverse/pixverse-v5";
+const IMAGE_SLUG_FALLBACK = "pixverse/pixverse-v4.5"; // yaygın açık sürüm :contentReference[oaicite:4]{index=4}
 
-const TEXT_SLUG  = process.env.TEXT_SLUG  || TEXT_SLUG_DEFAULT;
-const IMAGE_SLUG = process.env.IMAGE_SLUG || IMAGE_SLUG_DEFAULT;
-
-// Dilersen Version ID'yi doğrudan ENV'den verebilirsin (slug çözümünü bypass eder)
-let TEXT_VERSION_ID  = process.env.TEXT_VERSION_ID  || null;
+let TEXT_VERSION_ID  = process.env.TEXT_VERSION_ID  || null; // ENV öncelikli
 let IMAGE_VERSION_ID = process.env.IMAGE_VERSION_ID || null;
 
-// Webhook kullanmak istersen Render env'de BASE_PUBLIC_URL ayarla ve aşağıdaki alanı body'ye ekle
-const BASE_PUBLIC_URL = process.env.BASE_PUBLIC_URL || null;
-
-// ----------------- Yardımcılar -----------------
+// -------- Utils --------
 function mapStatus(s) {
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
   if (s === "starting" || s === "processing" || s === "queued") return "IN_PROGRESS";
   return "IN_QUEUE";
 }
-
 function extractUrl(output) {
   if (!output) return null;
   if (Array.isArray(output) && output.length) return output[output.length - 1];
@@ -56,7 +42,6 @@ function extractUrl(output) {
   }
   return null;
 }
-
 async function httpJson(method, url, bodyObj, headers = {}) {
   const r = await fetch(url, {
     method,
@@ -64,41 +49,46 @@ async function httpJson(method, url, bodyObj, headers = {}) {
     body: bodyObj ? JSON.stringify(bodyObj) : undefined,
   });
   const text = await r.text();
-  if (!r.ok) throw new Error(`upstream ${r.status}: ${text}`);
+  if (!r.ok) {
+    console.error(`[UPSTREAM ${r.status}] ${method} ${url} :: ${text?.slice(0,400)}`);
+    throw new Error(`upstream ${r.status}: ${text}`);
+  }
   try { return JSON.parse(text); } catch { return text; }
 }
-
 async function listVersions(slug) {
-  return httpJson(
-    "GET",
-    `https://api.replicate.com/v1/models/${slug}/versions`,
-    null,
-    { Authorization: `Token ${REPLICATE_TOKEN}` }
-  );
+  const url = `https://api.replicate.com/v1/models/${slug}/versions`;
+  console.log(`[VERSIONS] listing ${slug}`);
+  return httpJson("GET", url, null, { Authorization: `Token ${REPLICATE_TOKEN}` });
 }
-
+async function resolveVersionIdWithFallback(primarySlug, fallbackSlug) {
+  try {
+    const j = await listVersions(primarySlug);
+    if (j?.results?.length) return { id: j.results[0].id, slug: primarySlug };
+    throw new Error(`no results for ${primarySlug}`);
+  } catch (e) {
+    console.warn(`[VERSIONS] primary failed for ${primarySlug}: ${String(e)}`);
+    const j2 = await listVersions(fallbackSlug);
+    if (j2?.results?.length) {
+      console.log(`[VERSIONS] using fallback ${fallbackSlug}`);
+      return { id: j2.results[0].id, slug: fallbackSlug };
+    }
+    throw new Error(`both primary & fallback failed for ${primarySlug} / ${fallbackSlug}`);
+  }
+}
 async function ensureVersionIds() {
-  // TEXT
   if (!TEXT_VERSION_ID) {
-    const j = await listVersions(TEXT_SLUG);
-    if (!j?.results?.length) throw new Error(`No versions for slug ${TEXT_SLUG}`);
-    TEXT_VERSION_ID = j.results[0].id; // latest
+    const { id, slug } = await resolveVersionIdWithFallback(TEXT_SLUG_PRIMARY, TEXT_SLUG_FALLBACK);
+    TEXT_VERSION_ID = id;
+    console.log(`[TEXT] using ${slug} -> ${TEXT_VERSION_ID}`);
   }
-  // IMAGE
   if (!IMAGE_VERSION_ID) {
-    const j = await listVersions(IMAGE_SLUG);
-    if (!j?.results?.length) throw new Error(`No versions for slug ${IMAGE_SLUG}`);
-    IMAGE_VERSION_ID = j.results[0].id; // latest
+    const { id, slug } = await resolveVersionIdWithFallback(IMAGE_SLUG_PRIMARY, IMAGE_SLUG_FALLBACK);
+    IMAGE_VERSION_ID = id;
+    console.log(`[IMAGE] using ${slug} -> ${IMAGE_VERSION_ID}`);
   }
 }
-
-// Replicate POST /predictions
 async function createPrediction(versionId, input) {
-  const body = {
-    version: versionId,
-    input,
-    // webhook: BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}/webhook/replicate` : undefined, // istersen aç
-  };
+  const body = { version: versionId, input };
   return httpJson(
     "POST",
     "https://api.replicate.com/v1/predictions",
@@ -109,8 +99,6 @@ async function createPrediction(versionId, input) {
     }
   );
 }
-
-// Replicate GET /predictions/{id}
 async function getPrediction(predId) {
   return httpJson(
     "GET",
@@ -120,38 +108,44 @@ async function getPrediction(predId) {
   );
 }
 
-// Basit in-memory job store (üretimde Redis önerilir)
+// -------- In-memory jobs --------
 const JOBS = new Map();
 
-// ----------------- Health -----------------
-app.get("/", (req, res) => res.json({ ok: true, text_model: TEXT_SLUG, image_model: IMAGE_SLUG }));
+// -------- Health --------
+app.get("/", (req, res) => {
+  res.json({
+    ok: true,
+    text_version_set: Boolean(TEXT_VERSION_ID),
+    image_version_set: Boolean(IMAGE_VERSION_ID),
+    text_slug_preferred: TEXT_SLUG_PRIMARY,
+    image_slug_preferred: IMAGE_SLUG_PRIMARY
+  });
+});
 
-// ----------------- Text → Video -----------------
+// -------- Text → Video --------
 app.post("/video/generate_text", async (req, res) => {
   try {
     const { prompt } = req.body || {};
     if (!prompt || !prompt.trim()) return res.status(400).json({ error: "prompt required" });
 
     await ensureVersionIds();
-
-    // Çoğu text→video modelinde "prompt" anahtarı yeterli; gerekiyorsa burada ek parametreler verilebilir.
     const pred = await createPrediction(TEXT_VERSION_ID, { prompt });
 
     const requestId = randomUUID();
     JOBS.set(requestId, { type: "text", pred_id: pred.id, created: Date.now() });
 
-    return res.json({
+    res.json({
       status: "IN_QUEUE",
       request_id: requestId,
       status_url: `/video/result/${requestId}`,
       response_url: `/video/result/${requestId}`,
     });
   } catch (e) {
-    return res.status(502).json({ error: String(e) });
+    res.status(502).json({ error: String(e) });
   }
 });
 
-// ----------------- Image → Video -----------------
+// -------- Image → Video --------
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
@@ -159,44 +153,29 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     await ensureVersionIds();
 
-    // Data URL dene; bazı modeller yalnız URL kabul eder (o durumda hata verir → aşağıda mesaj var)
     const dataUrl = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
 
-    // 1. deneme: input_image
     try {
       const pred = await createPrediction(IMAGE_VERSION_ID, { input_image: dataUrl, prompt });
       const requestId = randomUUID();
       JOBS.set(requestId, { type: "image", pred_id: pred.id, created: Date.now() });
-      return res.json({
-        status: "IN_QUEUE",
-        request_id: requestId,
-        status_url: `/video/result/${requestId}`,
-        response_url: `/video/result/${requestId}`,
-      });
+      res.json({ status: "IN_QUEUE", request_id: requestId, status_url: `/video/result/${requestId}`, response_url: `/video/result/${requestId}` });
     } catch (e1) {
-      // 2. deneme: image
       try {
         const pred2 = await createPrediction(IMAGE_VERSION_ID, { image: dataUrl, prompt });
         const requestId = randomUUID();
         JOBS.set(requestId, { type: "image", pred_id: pred2.id, created: Date.now() });
-        return res.json({
-          status: "IN_QUEUE",
-          request_id: requestId,
-          status_url: `/video/result/${requestId}`,
-          response_url: `/video/result/${requestId}`,
-        });
+        res.json({ status: "IN_QUEUE", request_id: requestId, status_url: `/video/result/${requestId}`, response_url: `/video/result/${requestId}` });
       } catch (e2) {
-        // 3. deneme: image_url (public URL gerekiyorsa burada kullan)
-        // Buraya otomatik upload ekleyebilirsin (S3/R2). Şimdilik sadece kullanıcıya ipucu veriyoruz.
-        throw new Error(String(e2) + " | Hint: This model may require a public URL. Upload the file and pass image_url.");
+        throw new Error(String(e2) + " | Hint: This model may require a public URL. Upload and pass image_url.");
       }
     }
   } catch (e) {
-    return res.status(502).json({ error: String(e) });
+    res.status(502).json({ error: String(e) });
   }
 });
 
-// ----------------- Result (ID ile) -----------------
+// -------- Result --------
 app.get("/video/result/:id", async (req, res) => {
   try {
     const job = JOBS.get(req.params.id);
@@ -206,13 +185,12 @@ app.get("/video/result/:id", async (req, res) => {
     const body = { status: mapStatus(pred.status), request_id: req.params.id };
     const url = extractUrl(pred.output);
     if (url) body.video_url = url;
-    return res.json(body);
+    res.json(body);
   } catch (e) {
-    return res.status(502).json({ error: String(e) });
+    res.status(502).json({ error: String(e) });
   }
 });
 
-// ----------------- Result (status_url ile) -----------------
 app.get("/video/result", async (req, res) => {
   const statusUrl = req.query.status_url;
   if (!statusUrl) return res.status(400).json({ error: "status_url required" });
@@ -220,20 +198,6 @@ app.get("/video/result", async (req, res) => {
   req.params.id = id;
   return app._router.handle(req, res, () => {});
 });
-
-// ----------------- Webhook (opsiyonel) -----------------
-// app.post("/webhook/replicate", express.json({ limit: "2mb" }), (req, res) => {
-//   const payload = req.body || {};
-//   const predId = payload.id;
-//   for (const [rid, job] of JOBS.entries()) {
-//     if (job.pred_id === predId) {
-//       job.last_payload = payload;
-//       job.webhook_status = payload.status;
-//       break;
-//     }
-//   }
-//   res.json({ ok: true });
-// });
 
 const port = process.env.PORT || 10000;
 app.listen(port, () => console.log("listening on", port));
