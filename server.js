@@ -4,52 +4,51 @@ import fetch from "node-fetch";
 import { randomUUID } from "node:crypto";
 
 const app = express();
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "12mb" })); // data-url büyür
 const upload = multer();
 
-// Basit in-memory job map (üretimde Redis düşünebilirsin)
 const JOBS = new Map();
 
-// Env
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_TOKEN) {
-  console.warn("WARN: REPLICATE_API_TOKEN env yok! Render tarafında eklemeyi unutma.");
+  console.error("FATAL: REPLICATE_API_TOKEN missing");
 }
 
-// Model version/tag (gerekirse güncelle)
 const PIKA_VERSION = process.env.PIKA_VERSION || "pika-labs/pika-1:latest";
 const SVD_VERSION  = process.env.SVD_VERSION  || "stability-ai/stable-video-diffusion:latest";
 
-// Yardımcılar
 async function replicatePost(model, input) {
+  const body = { version: model, input };
   const r = await fetch("https://api.replicate.com/v1/predictions", {
     method: "POST",
     headers: {
-      "Authorization": `Token ${REPLICATE_TOKEN}`,
-      "Content-Type": "application/json"
+      Authorization: `Token ${REPLICATE_TOKEN}`,
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify({ version: model, input })
+    body: JSON.stringify(body),
   });
+  const text = await r.text();
   if (!r.ok) {
-    const text = await r.text();
-    throw new Error(`Replicate ${r.status}: ${text}`);
+    // 4xx/5xx’yi aynen ileri veriyoruz; Android tarafında göreceksin
+    throw new Error(`upstream ${r.status}: ${text}`);
   }
-  return r.json();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`upstream ${r.status}: ${text}`);
+  }
 }
 
 async function replicateGet(id) {
   const r = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
-    headers: { "Authorization": `Token ${REPLICATE_TOKEN}` }
+    headers: { Authorization: `Token ${REPLICATE_TOKEN}` },
   });
-  if (!r.ok) {
-    const text = await r.text();
-    throw new Error(`Replicate ${r.status}: ${text}`);
-  }
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(`upstream ${r.status}: ${text}`);
+  return JSON.parse(text);
 }
 
 function mapStatus(s) {
-  // starting, processing, succeeded, failed, canceled
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
   if (s === "starting" || s === "processing") return "IN_PROGRESS";
@@ -78,12 +77,11 @@ app.post("/video/generate_text", async (req, res) => {
     const pred = await replicatePost(PIKA_VERSION, { prompt });
     const id = randomUUID();
     JOBS.set(id, { pred_id: pred.id, type: "text", created: Date.now() });
-
     return res.json({
       status: "IN_QUEUE",
       request_id: id,
       status_url: `/video/result/${id}`,
-      response_url: `/video/result/${id}`
+      response_url: `/video/result/${id}`,
     });
   } catch (e) {
     return res.status(502).json({ error: String(e) });
@@ -91,36 +89,49 @@ app.post("/video/generate_text", async (req, res) => {
 });
 
 // ---- Image -> Video ----
+// Bazı modeller "input_image", bazıları "image" ister; ikisini de deneriz.
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "image file required (multipart form field: image)" });
+    if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
 
-    // Pek çok Replicate modeli data URL kabul eder.
-    // Eğer kullandığın sürüm URL isterse, burada bir dosya upload servisi kullanıp (örn tmpfiles.org)
-    // linki inputa koyabilirsin. İlk deneme için data URL:
     const dataUrl = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
 
-    const pred = await replicatePost(SVD_VERSION, {
-      input_image: dataUrl,
-      prompt
-    });
-
-    const id = randomUUID();
-    JOBS.set(id, { pred_id: pred.id, type: "image", created: Date.now() });
-
-    return res.json({
-      status: "IN_QUEUE",
-      request_id: id,
-      status_url: `/video/result/${id}`,
-      response_url: `/video/result/${id}`
-    });
+    // 1. deneme: input_image
+    try {
+      const pred = await replicatePost(SVD_VERSION, { input_image: dataUrl, prompt });
+      const id = randomUUID();
+      JOBS.set(id, { pred_id: pred.id, type: "image", created: Date.now() });
+      return res.json({
+        status: "IN_QUEUE",
+        request_id: id,
+        status_url: `/video/result/${id}`,
+        response_url: `/video/result/${id}`,
+      });
+    } catch (e) {
+      const msg = String(e);
+      // input adı yüzünden 422/400 gelebilir; ikinci denemeye geç
+      if (!msg.includes("upstream")) throw e;
+      // 2. deneme: image
+      const pred2 = await replicatePost(SVD_VERSION, { image: dataUrl, prompt });
+      const id = randomUUID();
+      JOBS.set(id, { pred_id: pred2.id, type: "image", created: Date.now() });
+      return res.json({
+        status: "IN_QUEUE",
+        request_id: id,
+        status_url: `/video/result/${id}`,
+        response_url: `/video/result/${id}`,
+      });
+    }
   } catch (e) {
-    return res.status(502).json({ error: String(e) });
+    const msg = String(e);
+    // Data URL kabul etmeyen model durumuna kullanıcıya yol göster
+    const hint =
+      "If your model rejects data URLs, upload the image to a public URL (S3/Cloudflare R2) and send that URL as 'input_image' or 'image'.";
+    return res.status(502).json({ error: msg, hint });
   }
 });
 
-// ---- Result by id ----
 app.get("/video/result/:id", async (req, res) => {
   try {
     const job = JOBS.get(req.params.id);
@@ -136,7 +147,6 @@ app.get("/video/result/:id", async (req, res) => {
   }
 });
 
-// ---- Result by status_url (query) ----
 app.get("/video/result", async (req, res) => {
   const statusUrl = req.query.status_url;
   if (!statusUrl) return res.status(400).json({ error: "status_url required" });
@@ -145,7 +155,6 @@ app.get("/video/result", async (req, res) => {
   return app._router.handle(req, res, () => {});
 });
 
-// (Opsiyonel) Health check
 app.get("/", (req, res) => res.json({ ok: true }));
 
 const port = process.env.PORT || 10000;
