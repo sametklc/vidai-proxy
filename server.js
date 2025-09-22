@@ -1,8 +1,11 @@
 // server.js — vidai-proxy (Node 20+, ESM)
-// Model: bytedance/seedance-1-pro (T2V & I2V)
-// UCUZ MOD varsayılanları: duration=3s, resolution=480p, fps=16
-// (Replicate/Seedance şemasında bu alanlar destekleniyor: duration (3–12), resolution (480p/1080p), fps (default 24), aspect_ratio, watermark) 
-// Kaynak: Replicate Seedance-1-Pro "API" sayfası ve sürüm şeması. 
+// Model: bytedance/seedance-1-pro (hem Text→Video hem Image→Video)
+// Özellikler:
+//  - Ucuz varsayılanlar: duration=3s, resolution=480p, fps=16 (override edilebilir)
+//  - Image upload: data URL yerine RAW Buffer (SDK kendi upload eder) -> 422 azalır
+//  - status_url ABSOLUTE üretimi (BASE_PUBLIC_URL varsa)
+//  - video URL çıkarma için derin tarayıcı (findUrlDeep)
+//  - Android sözleşmesiyle uyumlu JSON: {status, request_id, status_url, response_url, job_id, video_url?}
 
 import express from "express";
 import multer from "multer";
@@ -13,29 +16,29 @@ const app = express();
 app.use(express.json({ limit: "16mb" }));
 const upload = multer();
 
-// ----- ENV
+// ===== ENV =====
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
 const SEEDANCE_MODEL_SLUG = process.env.SEEDANCE_MODEL_SLUG || "bytedance/seedance-1-pro";
 const SEEDANCE_VERSION_ID = process.env.SEEDANCE_VERSION_ID || null;
 
-// ABSOLUTE status_url için
+// ABSOLUTE status_url için (örn: https://vidai-proxy.onrender.com)
 const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
 
-// ----- “UCUZ MOD” VARSAYILANLAR -----
+// ===== “UCUZ MOD” VARSAYILANLAR =====
 const CHEAP_DEFAULTS = {
-  duration: 3,          // 3–12 arası geçerli (Pro); düşük tut = daha ucuz
-  resolution: "480p",   // 480p ya da 1080p (Pro destekliyor)
-  fps: 16,              // 24 varsayılan; daha düşük fps = daha az hesap
-  aspect_ratio: undefined, // T2V'de geçerli (örn "16:9", "9:16"); I2V'de ignore
+  duration: 3,          // 3–12 arası (düşük tut daha ucuz)
+  resolution: "480p",   // 480p veya 1080p
+  fps: 16,              // varsayılan 24, düşürmek maliyeti azaltır
+  aspect_ratio: undefined, // T2V için geçerli; I2V'de yok sayılır
   watermark: false
 };
 
-// ----- Replicate SDK
+// ===== Replicate SDK =====
 const replicate = new Replicate({ auth: REPLICATE_API_TOKEN });
 
-// ----- Helpers
+// ===== Helpers =====
 function mapStatus(s) {
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
@@ -43,6 +46,7 @@ function mapStatus(s) {
   return "IN_QUEUE";
 }
 
+// Derin recursive URL arayıcı: obj/arr/string içinde ilk http(.mp4) benzeri linki döndürür
 function findUrlDeep(x) {
   try {
     if (x && typeof x.url === "function") {
@@ -50,8 +54,13 @@ function findUrlDeep(x) {
       if (typeof u === "string" && u.startsWith("http")) return u;
     }
   } catch {}
+
   if (!x) return null;
-  if (typeof x === "string") return x.startsWith("http") ? x : null;
+
+  if (typeof x === "string") {
+    return x.startsWith("http") ? x : null;
+  }
+
   if (Array.isArray(x)) {
     for (const it of x) {
       const u = findUrlDeep(it);
@@ -59,14 +68,19 @@ function findUrlDeep(x) {
     }
     return null;
   }
+
   if (typeof x === "object") {
+    // yaygın anahtarlar
     for (const k of ["video", "url", "file", "mp4"]) {
       const v = x[k];
       if (typeof v === "string" && v.startsWith("http")) return v;
       const u = findUrlDeep(v);
       if (u) return u;
     }
+    // { urls: { get: "http..." } }
     if (x.urls && typeof x.urls.get === "string" && x.urls.get.startsWith("http")) return x.urls.get;
+
+    // tüm alanlar
     for (const k of Object.keys(x)) {
       const u = findUrlDeep(x[k]);
       if (u) return u;
@@ -97,19 +111,22 @@ function makeStatusUrl(requestId) {
   return path;
 }
 
-// ----- Health
+// ===== Health =====
 app.get("/", (req, res) => {
-  res.json({ ok: true, model: SEEDANCE_VERSION_ID || SEEDANCE_MODEL_SLUG, base_public_url: BASE_PUBLIC_URL || null });
+  res.json({
+    ok: true,
+    model: SEEDANCE_VERSION_ID || SEEDANCE_MODEL_SLUG,
+    base_public_url: BASE_PUBLIC_URL || null
+  });
 });
 
-// ----- Text → Video
+// ===== Text → Video =====
 app.post("/video/generate_text", async (req, res) => {
   try {
     const b = req.body || {};
     const prompt = (b.prompt || "").toString().trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // Body'den override gelirse kullan; yoksa ucuz varsayılanlar:
     const input = {
       prompt,
       duration: Number.isFinite(+b.duration) ? +b.duration : CHEAP_DEFAULTS.duration,
@@ -119,8 +136,10 @@ app.post("/video/generate_text", async (req, res) => {
       watermark: typeof b.watermark === "boolean" ? b.watermark : CHEAP_DEFAULTS.watermark
     };
 
-    const createBody = SEEDANCE_VERSION_ID ? { version: SEEDANCE_VERSION_ID, input }
-                                           : { model: SEEDANCE_MODEL_SLUG,  input };
+    const createBody = SEEDANCE_VERSION_ID
+      ? { version: SEEDANCE_VERSION_ID, input }
+      : { model: SEEDANCE_MODEL_SLUG,  input };
+
     const pred = await replicate.predictions.create(createBody);
 
     const requestId = randomUUID();
@@ -139,25 +158,34 @@ app.post("/video/generate_text", async (req, res) => {
   }
 });
 
-// ----- Image → Video
+// ===== Image → Video =====
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
 
-    // Ucuz varsayılanlar + formdan gelirse override:
-    const duration = Number.isFinite(+req.body?.duration) ? +req.body.duration : CHEAP_DEFAULTS.duration;
+    // Ucuz varsayılanlar + form override
+    const duration   = Number.isFinite(+req.body?.duration) ? +req.body.duration : CHEAP_DEFAULTS.duration;
     const resolution = req.body?.resolution || CHEAP_DEFAULTS.resolution;
-    const fps = Number.isFinite(+req.body?.fps) ? +req.body.fps : CHEAP_DEFAULTS.fps;
-    const watermark = typeof req.body?.watermark === "string"
+    const fps        = Number.isFinite(+req.body?.fps) ? +req.body.fps : CHEAP_DEFAULTS.fps;
+    const watermark  = typeof req.body?.watermark === "string"
       ? req.body.watermark === "true"
       : CHEAP_DEFAULTS.watermark;
 
-    const dataUrl = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
-    const input = { prompt, image: dataUrl, duration, resolution, fps, watermark };
+    // ÖNEMLİ: data URL yerine RAW BUFFER veriyoruz (SDK kendi upload eder)
+    const input = {
+      prompt,
+      image: req.file.buffer,   // <-- Buffer (100MB'a kadar güvenli)
+      duration,
+      resolution,
+      fps,
+      watermark
+    };
 
-    const createBody = SEEDANCE_VERSION_ID ? { version: SEEDANCE_VERSION_ID, input }
-                                           : { model: SEEDANCE_MODEL_SLUG,  input };
+    const createBody = SEEDANCE_VERSION_ID
+      ? { version: SEEDANCE_VERSION_ID, input }
+      : { model: SEEDANCE_MODEL_SLUG,  input };
+
     const pred = await replicate.predictions.create(createBody);
 
     const requestId = randomUUID();
@@ -176,7 +204,7 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   }
 });
 
-// ----- Result
+// ===== Result (ID ile) =====
 app.get("/video/result/:id", async (req, res) => {
   try {
     const job = JOBS.get(req.params.id);
@@ -185,7 +213,11 @@ app.get("/video/result/:id", async (req, res) => {
     const pred = await replicate.predictions.get(job.pred_id);
     const url = findUrlDeep(pred.output);
 
-    const body = { status: mapStatus(pred.status), request_id: req.params.id, job_id: job.pred_id };
+    const body = {
+      status: mapStatus(pred.status),
+      request_id: req.params.id,
+      job_id: job.pred_id
+    };
     if (url) body.video_url = url;
 
     if (pred.status === "succeeded" && !url) {
@@ -197,6 +229,7 @@ app.get("/video/result/:id", async (req, res) => {
   }
 });
 
+// ===== Result (status_url ile) =====
 app.get("/video/result", async (req, res) => {
   try {
     const q = req.query.status_url;
