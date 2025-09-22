@@ -1,7 +1,10 @@
 // server.js — vidai-proxy (Node 20+, ESM)
-// Replicate SDK kullanır: model slug ile çalışır (version ID şart değil).
-// Text→Video: google/veo-3-fast (gated olmayan hızlı sürüm)
-// Image→Video: pixverse/pixverse-v5 (gerekirse v4.5'e geçebilirsin)
+// SADECE ByteDance Seedance-1-Pro kullanır (hem T2V hem I2V).
+// Android tarafı ile sözleşme:
+//   POST /video/generate_text   {prompt}
+//   POST /video/generate_image  multipart: image, prompt
+//   GET  /video/result/:id      -> {status, video_url?}
+// Replicate SDK ile "slug" kullanıyoruz; version ID zorunlu DEĞİL.
 
 import express from "express";
 import multer from "multer";
@@ -16,16 +19,15 @@ const upload = multer();
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
-const TEXT_MODEL  = process.env.TEXT_MODEL_SLUG  || "google/veo-3-fast";
-const IMAGE_MODEL = process.env.IMAGE_MODEL_SLUG || "pixverse/pixverse-v5";
-// (opsiyonel) Sürümü sabitlemek istersen:
-const TEXT_VERSION_ID  = process.env.TEXT_VERSION_ID  || null;
-const IMAGE_VERSION_ID = process.env.IMAGE_VERSION_ID || null;
+// Tek model: bytedance/seedance-1-pro
+const SEEDANCE_MODEL_SLUG = process.env.SEEDANCE_MODEL_SLUG || "bytedance/seedance-1-pro";
+// (Opsiyonel) Versiyona kilitlemek istersen (gerekli değil):
+const SEEDANCE_VERSION_ID = process.env.SEEDANCE_VERSION_ID || null;
 
 // ----- Replicate SDK client
 const replicate = new Replicate({ auth: REPLICATE_API_TOKEN });
 
-// ----- Utils
+// ----- Helpers
 function mapStatus(s) {
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
@@ -33,11 +35,11 @@ function mapStatus(s) {
   return "IN_QUEUE";
 }
 
-// Replicate farklı output formatları verebiliyor. Hepsini tarayalım.
+// Seedance çıkışı farklı formatlarda gelebilir; sağlam URL çıkarıcı:
 function extractVideoUrl(output) {
   if (!output) return null;
 
-  // 1) SDK run() ile File-like gelebilir: .url()
+  // 1) SDK File-like: .url()
   try {
     if (typeof output.url === "function") {
       const u = output.url();
@@ -45,22 +47,20 @@ function extractVideoUrl(output) {
     }
   } catch (_) {}
 
-  // 2) Dizi ise: string / object[url|file|video|output[0]]
+  // 2) Array
   if (Array.isArray(output) && output.length) {
+    // en sonda string URL olabiliyor
     const last = output[output.length - 1];
     if (typeof last === "string" && last.startsWith("http")) return last;
-    if (last && typeof last === "object") {
-      if (typeof last.url === "string") return last.url;
-      if (typeof last.file === "string") return last.file;
-      if (typeof last.video === "string") return last.video;
-      if (Array.isArray(last.output) && last.output.length && typeof last.output[0] === "string") return last.output[0];
-    }
-    // tüm elemanları dolaş:
+    // objeler içinde url/file/video/mp4 alanlarına bak
     for (const it of output) {
       if (typeof it === "string" && it.startsWith("http")) return it;
       if (it && typeof it === "object") {
         for (const k of ["url", "file", "video", "mp4"]) {
           if (typeof it[k] === "string" && it[k].startsWith("http")) return it[k];
+        }
+        if (Array.isArray(it.output) && it.output.length && typeof it.output[0] === "string" && it.output[0].startsWith("http")) {
+          return it.output[0];
         }
       }
     }
@@ -72,12 +72,12 @@ function extractVideoUrl(output) {
   // 4) Obje: muhtemel alanlar
   if (typeof output === "object") {
     for (const k of ["video", "url", "file", "mp4"]) {
-      if (typeof output[k] === "string" && output[k].startsWith("http")) return output[k];
+      const v = output[k];
+      if (typeof v === "string" && v.startsWith("http")) return v;
     }
     if (Array.isArray(output.output) && output.output.length && typeof output.output[0] === "string") {
       if (output.output[0].startsWith("http")) return output.output[0];
     }
-    // bazen { urls: { get: "http..." } } gibi olur
     if (output.urls && typeof output.urls.get === "string") return output.urls.get;
   }
 
@@ -90,35 +90,38 @@ function httpError(res, e) {
     return res.status(402).json({ error: "Payment required on Replicate. Lütfen Replicate hesabınıza kart/limit ekleyin." });
   }
   if (msg.toLowerCase().includes("permission") || msg.includes("403")) {
-    return res.status(403).json({ error: "Permission denied on Replicate. Bu modele erişim izniniz yok (veo-3 yerine veo-3-fast deneyin)." });
+    return res.status(403).json({ error: "Permission denied on Replicate. Bu modele erişim izniniz yok." });
   }
   if ((msg.includes("Invalid") && msg.includes("version")) || msg.includes("422")) {
-    return res.status(422).json({ error: "Invalid version or input. Version ID/slug veya input alanları hatalı olabilir." });
+    return res.status(422).json({ error: "Invalid version or input. Input/slug/version kontrol edin." });
   }
   return res.status(502).json({ error: msg });
 }
 
-// basit in-memory store
+// basit in-memory store (prod için Redis önerilir)
 const JOBS = new Map();
 
 // ----- Health
 app.get("/", (req, res) => {
   res.json({
     ok: true,
-    text_model: TEXT_VERSION_ID || TEXT_MODEL,
-    image_model: IMAGE_VERSION_ID || IMAGE_MODEL
+    model: SEEDANCE_VERSION_ID || SEEDANCE_MODEL_SLUG
   });
 });
 
-// ----- Text → Video
+// ----- Text → Video (Seedance: prompt)
 app.post("/video/generate_text", async (req, res) => {
   try {
     const { prompt } = req.body || {};
     if (!prompt || !prompt.trim()) return res.status(400).json({ error: "prompt required" });
 
-    const createBody = TEXT_VERSION_ID
-      ? { version: TEXT_VERSION_ID, input: { prompt } }
-      : { model: TEXT_MODEL,        input: { prompt } };
+    // Seedance opsiyonelleri istersen body’den ileride alabiliriz:
+    // const { duration=5, resolution="1080p", aspect_ratio="16:9", fps=24 } = req.body || {};
+    const input = { prompt }; // şimdilik varsayılanları kullanıyoruz (duration 5s, 1080p, vs.)
+
+    const createBody = SEEDANCE_VERSION_ID
+      ? { version: SEEDANCE_VERSION_ID, input }
+      : { model: SEEDANCE_MODEL_SLUG,  input };
 
     const pred = await replicate.predictions.create(createBody);
 
@@ -137,34 +140,21 @@ app.post("/video/generate_text", async (req, res) => {
   }
 });
 
-// ----- Image → Video
+// ----- Image → Video (Seedance: image + prompt)
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
+
+    // Seedance 'image' alanını kabul ediyor; data URL iş görüyor.
     const dataUrl = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
+    const input = { prompt, image: dataUrl };
 
-    // Farklı input anahtarlarını sırayla dene
-    const candidates = [
-      { prompt, image: dataUrl },
-      { prompt, input_image: dataUrl },
-      { prompt, image_url: dataUrl } // bazı modeller sadece URL ister; data URL de kabul edebilir
-    ];
+    const createBody = SEEDANCE_VERSION_ID
+      ? { version: SEEDANCE_VERSION_ID, input }
+      : { model: SEEDANCE_MODEL_SLUG,  input };
 
-    let pred = null;
-    let lastErr = null;
-    for (const input of candidates) {
-      try {
-        const createBody = IMAGE_VERSION_ID
-          ? { version: IMAGE_VERSION_ID, input }
-          : { model: IMAGE_MODEL,        input };
-        pred = await replicate.predictions.create(createBody);
-        break;
-      } catch (ee) {
-        lastErr = ee;
-      }
-    }
-    if (!pred) throw lastErr || new Error("model did not accept any image field");
+    const pred = await replicate.predictions.create(createBody);
 
     const requestId = randomUUID();
     JOBS.set(requestId, { type: "image", pred_id: pred.id, created: Date.now() });
@@ -197,7 +187,6 @@ app.get("/video/result/:id", async (req, res) => {
     };
     if (url) body.video_url = url;
 
-    // debug log
     if (pred.status === "succeeded" && !url) {
       console.warn("[result] succeeded but no url found → pred.id:", pred.id, " output:", JSON.stringify(pred.output));
     }
