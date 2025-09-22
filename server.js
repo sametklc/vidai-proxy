@@ -1,196 +1,189 @@
-// server.js (Node 20+, ESM) — vidai-proxy
-// Text->Video: google/veo-3 (gerekirse fallback: google/veo-3-fast)
-// Image->Video: pixverse/pixverse-v5 (gerekirse fallback: pixverse/pixverse-v4.5)
+// server.js — Replicate SDK ile proxy
+// Text→Video: google/veo-3-fast
+// Image→Video: pixverse/pixverse-v5  (gerekirse v4.5'e geçersin)
+// Not: Replicate SDK ile model "slug" veriyoruz; version ID vermek şart değil.
 
 import express from "express";
 import multer from "multer";
-import fetch from "node-fetch";
 import { randomUUID } from "node:crypto";
+import Replicate from "replicate";
 
 const app = express();
 app.use(express.json({ limit: "16mb" }));
 const upload = multer();
 
-// -------- ENV --------
-const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
-if (!REPLICATE_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
+// -------- ENV
+const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
+if (!REPLICATE_API_TOKEN) {
+  console.error("FATAL: REPLICATE_API_TOKEN missing");
+}
+const TEXT_MODEL  = process.env.TEXT_MODEL_SLUG  || "google/veo-3-fast";
+const IMAGE_MODEL = process.env.IMAGE_MODEL_SLUG || "pixverse/pixverse-v5";
 
-const TEXT_SLUG_PRIMARY   = process.env.TEXT_SLUG  || "google/veo-3";
-const TEXT_SLUG_FALLBACK  = "google/veo-3-fast"; // çoğu hesapta açık :contentReference[oaicite:3]{index=3}
-const IMAGE_SLUG_PRIMARY  = process.env.IMAGE_SLUG || "pixverse/pixverse-v5";
-const IMAGE_SLUG_FALLBACK = "pixverse/pixverse-v4.5"; // yaygın açık sürüm :contentReference[oaicite:4]{index=4}
+// İstersen versiyona kilitlemek için (opsiyonel): bu ikisini doldurursan 'model' yerine 'version' alanını kullanacağız
+const TEXT_VERSION_ID  = process.env.TEXT_VERSION_ID  || null;
+const IMAGE_VERSION_ID = process.env.IMAGE_VERSION_ID || null;
 
-let TEXT_VERSION_ID  = process.env.TEXT_VERSION_ID  || null; // ENV öncelikli
-let IMAGE_VERSION_ID = process.env.IMAGE_VERSION_ID || null;
+// -------- Replicate client (SDK)
+const replicate = new Replicate({ auth: REPLICATE_API_TOKEN });
 
-// -------- Utils --------
+// -------- Helpers
 function mapStatus(s) {
+  // Replicate prediction.status: "starting" | "processing" | "succeeded" | "failed" | "canceled"
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
   if (s === "starting" || s === "processing" || s === "queued") return "IN_PROGRESS";
   return "IN_QUEUE";
 }
-function extractUrl(output) {
+
+function extractVideoUrl(output) {
+  // SDK ile output bazen dizi, bazen File-like olabilir. Esnek davranalım.
   if (!output) return null;
-  if (Array.isArray(output) && output.length) return output[output.length - 1];
-  if (typeof output === "string") return output;
-  if (typeof output === "object") {
-    for (const k of ["video", "url", "output", "mp4", "result"]) {
-      if (typeof output[k] === "string") return output[k];
-      if (Array.isArray(output[k]) && output[k].length && typeof output[k][0] === "string") return output[k][0];
+
+  // 1) replicate File-like objesinde url() metodu olabilir
+  try {
+    if (typeof output.url === "function") {
+      return output.url(); // string
+    }
+  } catch (_) {}
+
+  // 2) Dizi ise son eleman genelde URL string
+  if (Array.isArray(output) && output.length) {
+    const last = output[output.length - 1];
+    if (typeof last === "string") return last;
+    // dizide obje varsa url alanını dene
+    if (last && typeof last === "object") {
+      if (typeof last.url === "string") return last.url;
+      if (Array.isArray(last.output) && last.output.length && typeof last.output[0] === "string") return last.output[0];
     }
   }
+
+  // 3) Düz string ise
+  if (typeof output === "string") return output;
+
+  // 4) Obje ise muhtemel alanlar
+  if (typeof output === "object") {
+    for (const k of ["video", "url", "mp4", "output", "result"]) {
+      const v = output[k];
+      if (typeof v === "string") return v;
+      if (Array.isArray(v) && v.length && typeof v[0] === "string") return v[0];
+    }
+  }
+
   return null;
 }
-async function httpJson(method, url, bodyObj, headers = {}) {
-  const r = await fetch(url, {
-    method,
-    headers,
-    body: bodyObj ? JSON.stringify(bodyObj) : undefined,
-  });
-  const text = await r.text();
-  if (!r.ok) {
-    console.error(`[UPSTREAM ${r.status}] ${method} ${url} :: ${text?.slice(0,400)}`);
-    throw new Error(`upstream ${r.status}: ${text}`);
+
+function httpError(res, e) {
+  const msg = String(e?.message || e);
+  // Daha anlaşılır hata mesajları
+  if (msg.includes("Payment") || msg.includes("402")) {
+    return res.status(402).json({ error: "Payment required on Replicate. Lütfen Replicate hesabınıza kart/limit ekleyin." });
   }
-  try { return JSON.parse(text); } catch { return text; }
-}
-async function listVersions(slug) {
-  const url = `https://api.replicate.com/v1/models/${slug}/versions`;
-  console.log(`[VERSIONS] listing ${slug}`);
-  return httpJson("GET", url, null, { Authorization: `Token ${REPLICATE_TOKEN}` });
-}
-async function resolveVersionIdWithFallback(primarySlug, fallbackSlug) {
-  try {
-    const j = await listVersions(primarySlug);
-    if (j?.results?.length) return { id: j.results[0].id, slug: primarySlug };
-    throw new Error(`no results for ${primarySlug}`);
-  } catch (e) {
-    console.warn(`[VERSIONS] primary failed for ${primarySlug}: ${String(e)}`);
-    const j2 = await listVersions(fallbackSlug);
-    if (j2?.results?.length) {
-      console.log(`[VERSIONS] using fallback ${fallbackSlug}`);
-      return { id: j2.results[0].id, slug: fallbackSlug };
-    }
-    throw new Error(`both primary & fallback failed for ${primarySlug} / ${fallbackSlug}`);
+  if (msg.includes("permission") || msg.includes("Permission") || msg.includes("403")) {
+    return res.status(403).json({ error: "Permission denied on Replicate. Bu modele erişim izniniz yok (veo-3 yerine veo-3-fast deneyin)." });
   }
-}
-async function ensureVersionIds() {
-  if (!TEXT_VERSION_ID) {
-    const { id, slug } = await resolveVersionIdWithFallback(TEXT_SLUG_PRIMARY, TEXT_SLUG_FALLBACK);
-    TEXT_VERSION_ID = id;
-    console.log(`[TEXT] using ${slug} -> ${TEXT_VERSION_ID}`);
+  if (msg.includes("version") && msg.includes("Invalid") || msg.includes("422")) {
+    return res.status(422).json({ error: "Invalid version or input. Version ID/slug veya input alanları hatalı olabilir." });
   }
-  if (!IMAGE_VERSION_ID) {
-    const { id, slug } = await resolveVersionIdWithFallback(IMAGE_SLUG_PRIMARY, IMAGE_SLUG_FALLBACK);
-    IMAGE_VERSION_ID = id;
-    console.log(`[IMAGE] using ${slug} -> ${IMAGE_VERSION_ID}`);
-  }
-}
-async function createPrediction(versionId, input) {
-  const body = { version: versionId, input };
-  return httpJson(
-    "POST",
-    "https://api.replicate.com/v1/predictions",
-    body,
-    {
-      Authorization: `Token ${REPLICATE_TOKEN}`,
-      "Content-Type": "application/json",
-    }
-  );
-}
-async function getPrediction(predId) {
-  return httpJson(
-    "GET",
-    `https://api.replicate.com/v1/predictions/${predId}`,
-    null,
-    { Authorization: `Token ${REPLICATE_TOKEN}` }
-  );
+  return res.status(502).json({ error: msg });
 }
 
-// -------- In-memory jobs --------
+// Basit in-memory store (production için Redis önerilir)
 const JOBS = new Map();
 
-// -------- Health --------
+// -------- Health
 app.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    text_version_set: Boolean(TEXT_VERSION_ID),
-    image_version_set: Boolean(IMAGE_VERSION_ID),
-    text_slug_preferred: TEXT_SLUG_PRIMARY,
-    image_slug_preferred: IMAGE_SLUG_PRIMARY
-  });
+  res.json({ ok: true, text_model: TEXT_VERSION_ID || TEXT_MODEL, image_model: IMAGE_VERSION_ID || IMAGE_MODEL });
 });
 
-// -------- Text → Video --------
+// -------- Text → Video
 app.post("/video/generate_text", async (req, res) => {
   try {
     const { prompt } = req.body || {};
     if (!prompt || !prompt.trim()) return res.status(400).json({ error: "prompt required" });
 
-    await ensureVersionIds();
-    const pred = await createPrediction(TEXT_VERSION_ID, { prompt });
+    // Replicate SDK ile "prediction" oluştur (queue)
+    const createBody = TEXT_VERSION_ID
+      ? { version: TEXT_VERSION_ID, input: { prompt } }
+      : { model: TEXT_MODEL,       input: { prompt } };
+
+    const pred = await replicate.predictions.create(createBody);
 
     const requestId = randomUUID();
     JOBS.set(requestId, { type: "text", pred_id: pred.id, created: Date.now() });
 
-    res.json({
+    return res.json({
       status: "IN_QUEUE",
       request_id: requestId,
       status_url: `/video/result/${requestId}`,
       response_url: `/video/result/${requestId}`,
     });
   } catch (e) {
-    res.status(502).json({ error: String(e) });
+    return httpError(res, e);
   }
 });
 
-// -------- Image → Video --------
+// -------- Image → Video
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
 
-    await ensureVersionIds();
-
     const dataUrl = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
 
-    try {
-      const pred = await createPrediction(IMAGE_VERSION_ID, { input_image: dataUrl, prompt });
-      const requestId = randomUUID();
-      JOBS.set(requestId, { type: "image", pred_id: pred.id, created: Date.now() });
-      res.json({ status: "IN_QUEUE", request_id: requestId, status_url: `/video/result/${requestId}`, response_url: `/video/result/${requestId}` });
-    } catch (e1) {
+    // Bazı modeller "image", bazıları "input_image" bekleyebilir; iki deneme yapalım.
+    const tryInputs = [
+      { prompt, image: dataUrl },
+      { prompt, input_image: dataUrl }
+    ];
+
+    let pred = null, errLast = null;
+    for (const input of tryInputs) {
       try {
-        const pred2 = await createPrediction(IMAGE_VERSION_ID, { image: dataUrl, prompt });
-        const requestId = randomUUID();
-        JOBS.set(requestId, { type: "image", pred_id: pred2.id, created: Date.now() });
-        res.json({ status: "IN_QUEUE", request_id: requestId, status_url: `/video/result/${requestId}`, response_url: `/video/result/${requestId}` });
-      } catch (e2) {
-        throw new Error(String(e2) + " | Hint: This model may require a public URL. Upload and pass image_url.");
+        const createBody = IMAGE_VERSION_ID
+          ? { version: IMAGE_VERSION_ID, input }
+          : { model: IMAGE_MODEL,        input };
+        pred = await replicate.predictions.create(createBody);
+        break;
+      } catch (ee) {
+        errLast = ee;
       }
     }
+    if (!pred) throw errLast || new Error("model input format not accepted");
+
+    const requestId = randomUUID();
+    JOBS.set(requestId, { type: "image", pred_id: pred.id, created: Date.now() });
+
+    return res.json({
+      status: "IN_QUEUE",
+      request_id: requestId,
+      status_url: `/video/result/${requestId}`,
+      response_url: `/video/result/${requestId}`,
+    });
   } catch (e) {
-    res.status(502).json({ error: String(e) });
+    return httpError(res, e);
   }
 });
 
-// -------- Result --------
+// -------- Result (ID ile)
 app.get("/video/result/:id", async (req, res) => {
   try {
     const job = JOBS.get(req.params.id);
     if (!job) return res.status(404).json({ error: "Unknown request id" });
 
-    const pred = await getPrediction(job.pred_id);
+    const pred = await replicate.predictions.get(job.pred_id);
     const body = { status: mapStatus(pred.status), request_id: req.params.id };
-    const url = extractUrl(pred.output);
+
+    const url = extractVideoUrl(pred.output);
     if (url) body.video_url = url;
-    res.json(body);
+
+    return res.json(body);
   } catch (e) {
-    res.status(502).json({ error: String(e) });
+    return httpError(res, e);
   }
 });
 
+// -------- Result (status_url ile)
 app.get("/video/result", async (req, res) => {
   const statusUrl = req.query.status_url;
   if (!statusUrl) return res.status(400).json({ error: "status_url required" });
