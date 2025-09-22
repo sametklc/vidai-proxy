@@ -1,10 +1,8 @@
 // server.js — vidai-proxy (Node 20+, ESM)
-// SADECE ByteDance Seedance-1-Pro kullanır (hem T2V hem I2V).
-// Android tarafı ile sözleşme:
-//   POST /video/generate_text   {prompt}
-//   POST /video/generate_image  multipart: image, prompt
-//   GET  /video/result/:id      -> {status, video_url?}
-// Replicate SDK ile "slug" kullanıyoruz; version ID zorunlu DEĞİL.
+// Model: bytedance/seedance-1-pro (T2V & I2V)
+// UCUZ MOD varsayılanları: duration=3s, resolution=480p, fps=16
+// (Replicate/Seedance şemasında bu alanlar destekleniyor: duration (3–12), resolution (480p/1080p), fps (default 24), aspect_ratio, watermark) 
+// Kaynak: Replicate Seedance-1-Pro "API" sayfası ve sürüm şeması. 
 
 import express from "express";
 import multer from "multer";
@@ -19,12 +17,22 @@ const upload = multer();
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
-// Tek model: bytedance/seedance-1-pro
 const SEEDANCE_MODEL_SLUG = process.env.SEEDANCE_MODEL_SLUG || "bytedance/seedance-1-pro";
-// (Opsiyonel) Versiyona kilitlemek istersen (gerekli değil):
 const SEEDANCE_VERSION_ID = process.env.SEEDANCE_VERSION_ID || null;
 
-// ----- Replicate SDK client
+// ABSOLUTE status_url için
+const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
+
+// ----- “UCUZ MOD” VARSAYILANLAR -----
+const CHEAP_DEFAULTS = {
+  duration: 3,          // 3–12 arası geçerli (Pro); düşük tut = daha ucuz
+  resolution: "480p",   // 480p ya da 1080p (Pro destekliyor)
+  fps: 16,              // 24 varsayılan; daha düşük fps = daha az hesap
+  aspect_ratio: undefined, // T2V'de geçerli (örn "16:9", "9:16"); I2V'de ignore
+  watermark: false
+};
+
+// ----- Replicate SDK
 const replicate = new Replicate({ auth: REPLICATE_API_TOKEN });
 
 // ----- Helpers
@@ -35,52 +43,35 @@ function mapStatus(s) {
   return "IN_QUEUE";
 }
 
-// Seedance çıkışı farklı formatlarda gelebilir; sağlam URL çıkarıcı:
-function extractVideoUrl(output) {
-  if (!output) return null;
-
-  // 1) SDK File-like: .url()
+function findUrlDeep(x) {
   try {
-    if (typeof output.url === "function") {
-      const u = output.url();
+    if (x && typeof x.url === "function") {
+      const u = x.url();
       if (typeof u === "string" && u.startsWith("http")) return u;
     }
-  } catch (_) {}
-
-  // 2) Array
-  if (Array.isArray(output) && output.length) {
-    // en sonda string URL olabiliyor
-    const last = output[output.length - 1];
-    if (typeof last === "string" && last.startsWith("http")) return last;
-    // objeler içinde url/file/video/mp4 alanlarına bak
-    for (const it of output) {
-      if (typeof it === "string" && it.startsWith("http")) return it;
-      if (it && typeof it === "object") {
-        for (const k of ["url", "file", "video", "mp4"]) {
-          if (typeof it[k] === "string" && it[k].startsWith("http")) return it[k];
-        }
-        if (Array.isArray(it.output) && it.output.length && typeof it.output[0] === "string" && it.output[0].startsWith("http")) {
-          return it.output[0];
-        }
-      }
+  } catch {}
+  if (!x) return null;
+  if (typeof x === "string") return x.startsWith("http") ? x : null;
+  if (Array.isArray(x)) {
+    for (const it of x) {
+      const u = findUrlDeep(it);
+      if (u) return u;
     }
+    return null;
   }
-
-  // 3) Düz string
-  if (typeof output === "string" && output.startsWith("http")) return output;
-
-  // 4) Obje: muhtemel alanlar
-  if (typeof output === "object") {
+  if (typeof x === "object") {
     for (const k of ["video", "url", "file", "mp4"]) {
-      const v = output[k];
+      const v = x[k];
       if (typeof v === "string" && v.startsWith("http")) return v;
+      const u = findUrlDeep(v);
+      if (u) return u;
     }
-    if (Array.isArray(output.output) && output.output.length && typeof output.output[0] === "string") {
-      if (output.output[0].startsWith("http")) return output.output[0];
+    if (x.urls && typeof x.urls.get === "string" && x.urls.get.startsWith("http")) return x.urls.get;
+    for (const k of Object.keys(x)) {
+      const u = findUrlDeep(x[k]);
+      if (u) return u;
     }
-    if (output.urls && typeof output.urls.get === "string") return output.urls.get;
   }
-
   return null;
 }
 
@@ -98,41 +89,49 @@ function httpError(res, e) {
   return res.status(502).json({ error: msg });
 }
 
-// basit in-memory store (prod için Redis önerilir)
 const JOBS = new Map();
+
+function makeStatusUrl(requestId) {
+  const path = `/video/result/${requestId}`;
+  if (BASE_PUBLIC_URL) return `${BASE_PUBLIC_URL}${path}`;
+  return path;
+}
 
 // ----- Health
 app.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    model: SEEDANCE_VERSION_ID || SEEDANCE_MODEL_SLUG
-  });
+  res.json({ ok: true, model: SEEDANCE_VERSION_ID || SEEDANCE_MODEL_SLUG, base_public_url: BASE_PUBLIC_URL || null });
 });
 
-// ----- Text → Video (Seedance: prompt)
+// ----- Text → Video
 app.post("/video/generate_text", async (req, res) => {
   try {
-    const { prompt } = req.body || {};
-    if (!prompt || !prompt.trim()) return res.status(400).json({ error: "prompt required" });
+    const b = req.body || {};
+    const prompt = (b.prompt || "").toString().trim();
+    if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // Seedance opsiyonelleri istersen body’den ileride alabiliriz:
-    // const { duration=5, resolution="1080p", aspect_ratio="16:9", fps=24 } = req.body || {};
-    const input = { prompt }; // şimdilik varsayılanları kullanıyoruz (duration 5s, 1080p, vs.)
+    // Body'den override gelirse kullan; yoksa ucuz varsayılanlar:
+    const input = {
+      prompt,
+      duration: Number.isFinite(+b.duration) ? +b.duration : CHEAP_DEFAULTS.duration,
+      resolution: b.resolution || CHEAP_DEFAULTS.resolution,
+      fps: Number.isFinite(+b.fps) ? +b.fps : CHEAP_DEFAULTS.fps,
+      aspect_ratio: b.aspect_ratio || CHEAP_DEFAULTS.aspect_ratio,
+      watermark: typeof b.watermark === "boolean" ? b.watermark : CHEAP_DEFAULTS.watermark
+    };
 
-    const createBody = SEEDANCE_VERSION_ID
-      ? { version: SEEDANCE_VERSION_ID, input }
-      : { model: SEEDANCE_MODEL_SLUG,  input };
-
+    const createBody = SEEDANCE_VERSION_ID ? { version: SEEDANCE_VERSION_ID, input }
+                                           : { model: SEEDANCE_MODEL_SLUG,  input };
     const pred = await replicate.predictions.create(createBody);
 
     const requestId = randomUUID();
     JOBS.set(requestId, { type: "text", pred_id: pred.id, created: Date.now() });
 
+    const statusUrl = makeStatusUrl(requestId);
     return res.json({
       status: "IN_QUEUE",
       request_id: requestId,
-      status_url: `/video/result/${requestId}`,
-      response_url: `/video/result/${requestId}`,
+      status_url: statusUrl,
+      response_url: statusUrl,
       job_id: pred.id
     });
   } catch (e) {
@@ -140,30 +139,36 @@ app.post("/video/generate_text", async (req, res) => {
   }
 });
 
-// ----- Image → Video (Seedance: image + prompt)
+// ----- Image → Video
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
 
-    // Seedance 'image' alanını kabul ediyor; data URL iş görüyor.
+    // Ucuz varsayılanlar + formdan gelirse override:
+    const duration = Number.isFinite(+req.body?.duration) ? +req.body.duration : CHEAP_DEFAULTS.duration;
+    const resolution = req.body?.resolution || CHEAP_DEFAULTS.resolution;
+    const fps = Number.isFinite(+req.body?.fps) ? +req.body.fps : CHEAP_DEFAULTS.fps;
+    const watermark = typeof req.body?.watermark === "string"
+      ? req.body.watermark === "true"
+      : CHEAP_DEFAULTS.watermark;
+
     const dataUrl = "data:image/jpeg;base64," + req.file.buffer.toString("base64");
-    const input = { prompt, image: dataUrl };
+    const input = { prompt, image: dataUrl, duration, resolution, fps, watermark };
 
-    const createBody = SEEDANCE_VERSION_ID
-      ? { version: SEEDANCE_VERSION_ID, input }
-      : { model: SEEDANCE_MODEL_SLUG,  input };
-
+    const createBody = SEEDANCE_VERSION_ID ? { version: SEEDANCE_VERSION_ID, input }
+                                           : { model: SEEDANCE_MODEL_SLUG,  input };
     const pred = await replicate.predictions.create(createBody);
 
     const requestId = randomUUID();
     JOBS.set(requestId, { type: "image", pred_id: pred.id, created: Date.now() });
 
+    const statusUrl = makeStatusUrl(requestId);
     return res.json({
       status: "IN_QUEUE",
       request_id: requestId,
-      status_url: `/video/result/${requestId}`,
-      response_url: `/video/result/${requestId}`,
+      status_url: statusUrl,
+      response_url: statusUrl,
       job_id: pred.id
     });
   } catch (e) {
@@ -171,20 +176,16 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   }
 });
 
-// ----- Result (ID ile)
+// ----- Result
 app.get("/video/result/:id", async (req, res) => {
   try {
     const job = JOBS.get(req.params.id);
     if (!job) return res.status(404).json({ error: "Unknown request id" });
 
     const pred = await replicate.predictions.get(job.pred_id);
-    const url = extractVideoUrl(pred.output);
+    const url = findUrlDeep(pred.output);
 
-    const body = {
-      status: mapStatus(pred.status),
-      request_id: req.params.id,
-      job_id: job.pred_id
-    };
+    const body = { status: mapStatus(pred.status), request_id: req.params.id, job_id: job.pred_id };
     if (url) body.video_url = url;
 
     if (pred.status === "succeeded" && !url) {
@@ -196,13 +197,19 @@ app.get("/video/result/:id", async (req, res) => {
   }
 });
 
-// ----- Result (status_url ile)
 app.get("/video/result", async (req, res) => {
-  const statusUrl = req.query.status_url;
-  if (!statusUrl) return res.status(400).json({ error: "status_url required" });
-  const id = statusUrl.toString().split("/").pop();
-  req.params.id = id;
-  return app._router.handle(req, res, () => {});
+  try {
+    const q = req.query.status_url;
+    if (!q) return res.status(400).json({ error: "status_url required" });
+    const raw = decodeURIComponent(q.toString());
+    const parts = raw.split("/").filter(Boolean);
+    const id = parts[parts.length - 1];
+    if (!id) return res.status(400).json({ error: "invalid status_url" });
+    req.params.id = id;
+    return app._router.handle(req, res, () => {});
+  } catch (e) {
+    return httpError(res, e);
+  }
 });
 
 const port = process.env.PORT || 10000;
