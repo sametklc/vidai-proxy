@@ -1,15 +1,14 @@
 {
   "name": "vidai-proxy",
-  "version": "1.0.0",
-  "private": true,
   "type": "module",
-  "main": "server.js",
-  "engines": { "node": ">=20" },
-  "scripts": { "start": "node server.js" },
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "express": "4.19.2",
-    "multer": "1.4.5-lts.1",
-    "node-fetch": "3.3.2",
-    "replicate": "0.31.1"
+    "@aws-sdk/client-s3": "^3.670.0",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
+    "replicate": "^0.31.0"
   }
 }
