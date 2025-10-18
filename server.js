@@ -1,9 +1,4 @@
-// server.js — SeeDance (bytedance/seedance) proxy — fps=24 fix
-// - Text→Video ve Image→Video
-// - Ucuz varsayılanlar: duration=3, resolution=480p, fps=24 (API bunu istiyor)
-// - Stateless: request_id = prediction.id
-// - Android sözleşmesi: { status, request_id, status_url, response_url, job_id, video_url? }
-
+// server.js — SeeDance (bytedance/seedance) proxy — robust URL extraction
 import express from "express";
 import multer from "multer";
 import Replicate from "replicate";
@@ -14,31 +9,28 @@ const upload = multer();
 
 // ===== ENV =====
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
-if (!REPLICATE_API_TOKEN) {
-  console.error("FATAL: REPLICATE_API_TOKEN missing");
-}
+if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
 const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
 
 // Model seçimi: lite (ucuz) veya pro (pahalı)
 const SEEDANCE_MODEL_SLUG =
   process.env.SEEDANCE_MODEL_SLUG || "bytedance/seedance-1-lite";
-// İstersen spesifik version id ver:
+// Version id (opsiyonel)
 const SEEDANCE_VERSION_ID = process.env.SEEDANCE_VERSION_ID || null;
 
-// “Ucuz” defaultlar — fps MUTLAKA 24!
+// SeeDance API fps=24 istiyor
 const CHEAP_DEFAULTS = {
-  duration: 3,          // maliyet düşürmek için kısa tut
-  resolution: "480p",   // lite: 480p/720p, pro: 480p/1080p
-  fps: 24,              // SeeDance API 24 istiyor
+  duration: 3,
+  resolution: "480p",
+  fps: 24,
   aspect_ratio: "16:9",
   watermark: false
 };
 
-// Replicate SDK
 const replicate = new Replicate({ auth: REPLICATE_API_TOKEN });
 
-// Helpers
+// ---- helpers
 function mapStatus(s) {
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
@@ -46,41 +38,80 @@ function mapStatus(s) {
   return "IN_QUEUE";
 }
 
-function findUrlDeep(x) {
+function makeStatusUrl(requestId) {
+  const path = `/video/result/${requestId}`;
+  return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
+}
+
+// Çok agresif URL bulucu (string, array, object, {urls:{get}}, {video_url}, vs.)
+function urlFromAny(x) {
+  if (!x) return null;
+
+  // 1) Eğer direkt string ise
+  if (typeof x === "string") {
+    return x.startsWith("http") ? x : null;
+  }
+
+  // 2) Eğer Replicate SDK File-like ise .url()
   try {
-    if (x && typeof x.url === "function") {
+    if (typeof x.url === "function") {
       const u = x.url();
       if (typeof u === "string" && u.startsWith("http")) return u;
     }
   } catch {}
-  if (!x) return null;
-  if (typeof x === "string") return x.startsWith("http") ? x : null;
+
+  // 3) Array ise sırayla tara
   if (Array.isArray(x)) {
     for (const it of x) {
-      const u = findUrlDeep(it);
+      const u = urlFromAny(it);
       if (u) return u;
     }
     return null;
   }
+
+  // 4) Object - yaygın anahtarlar
   if (typeof x === "object") {
-    for (const k of ["video", "url", "file", "mp4"]) {
+    // (a) Çok görülen alanlar
+    const directKeys = [
+      "video_url", "video", "url", "mp4", "file",
+      // kimi modeller "output_url" vs. koyabiliyor
+      "output_url", "result_url", "media_url"
+    ];
+    for (const k of directKeys) {
       const v = x[k];
       if (typeof v === "string" && v.startsWith("http")) return v;
-      const u = findUrlDeep(v);
-      if (u) return u;
     }
-    if (x.urls && typeof x.urls.get === "string" && x.urls.get.startsWith("http")) return x.urls.get;
+
+    // (b) Cloudflare tarzı {urls:{get:"http..."}}
+    if (x.urls && typeof x.urls.get === "string" && x.urls.get.startsWith("http")) {
+      return x.urls.get;
+    }
+
+    // (c) output bir string olabilir
+    if (typeof x.output === "string" && x.output.startsWith("http")) {
+      return x.output;
+    }
+
+    // (d) output array/string-object karışık olabilir
+    const out = x.output;
+    const tryOut = urlFromAny(out);
+    if (tryOut) return tryOut;
+
+    // (e) video nested olabilir: { output: { video: "http..." } }
+    if (x.output && typeof x.output === "object") {
+      const v1 = urlFromAny(x.output.video);
+      if (v1) return v1;
+      const v2 = urlFromAny(x.output.url);
+      if (v2) return v2;
+    }
+
+    // (f) tüm alanları dolaş
     for (const k of Object.keys(x)) {
-      const u = findUrlDeep(x[k]);
+      const u = urlFromAny(x[k]);
       if (u) return u;
     }
   }
   return null;
-}
-
-function makeStatusUrl(requestId) {
-  const path = `/video/result/${requestId}`;
-  return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
 }
 
 function httpError(res, e) {
@@ -100,7 +131,7 @@ function httpError(res, e) {
   return res.status(502).json({ error: msg });
 }
 
-// ===== Health =====
+// ---- health
 app.get("/", (_req, res) => {
   res.json({
     ok: true,
@@ -109,21 +140,18 @@ app.get("/", (_req, res) => {
   });
 });
 
-// ===== Text → Video =====
+// ---- Text → Video
 app.post("/video/generate_text", async (req, res) => {
   try {
     const b = req.body || {};
     const prompt = (b.prompt || "").toString().trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // Gelen fps ne olursa olsun 24'e zorluyoruz (API uyumu)
-    const fps = 24;
-
     const input = {
       prompt,
       duration: Number.isFinite(+b.duration) ? +b.duration : CHEAP_DEFAULTS.duration,
       resolution: b.resolution || CHEAP_DEFAULTS.resolution,
-      fps, // ZORLA 24
+      fps: 24, // SeeDance enum
       aspect_ratio: b.aspect_ratio || CHEAP_DEFAULTS.aspect_ratio,
       watermark: typeof b.watermark === "boolean" ? b.watermark : CHEAP_DEFAULTS.watermark
     };
@@ -147,14 +175,11 @@ app.post("/video/generate_text", async (req, res) => {
   }
 });
 
-// ===== Image → Video =====
+// ---- Image → Video
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
-
-    // fps 24'e sabit
-    const fps = 24;
 
     const duration   = Number.isFinite(+req.body?.duration) ? +req.body.duration : CHEAP_DEFAULTS.duration;
     const resolution = req.body?.resolution || CHEAP_DEFAULTS.resolution;
@@ -164,12 +189,11 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     const input = {
       prompt,
-      image: req.file.buffer, // Buffer veriyoruz
+      image: req.file.buffer,
       duration,
       resolution,
-      fps,        // ZORLA 24
+      fps: 24,   // SeeDance enum
       watermark
-      // aspect_ratio → I2V'de genelde yok sayılıyor; göndermiyoruz
     };
 
     const createBody = SEEDANCE_VERSION_ID
@@ -191,17 +215,24 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   }
 });
 
-// ===== Result (stateless) =====
+// ---- Result (stateless; request_id = pred.id)
 app.get("/video/result/:id", async (req, res) => {
   try {
     const predId = req.params.id;
     const pred = await replicate.predictions.get(predId);
     const status = mapStatus(pred.status);
-    const url = findUrlDeep(pred.output);
+
+    // URL’yi ne olursa olsun çıkarmayı dene
+    const url = urlFromAny(pred.output);
 
     const body = { status, request_id: predId, job_id: predId };
-    if (pred.status === "succeeded" && url) {
-      body.video_url = url;
+    if (pred.status === "succeeded") {
+      if (url) {
+        body.video_url = url;
+      } else {
+        // ÇOK nadir: succeeded ama output görünmüyor
+        console.warn("[result] succeeded but URL not found. pred.id=", predId, " raw output=", JSON.stringify(pred.output));
+      }
     }
     return res.json(body);
   } catch (e) {
@@ -209,7 +240,7 @@ app.get("/video/result/:id", async (req, res) => {
   }
 });
 
-// ===== status_url query formu =====
+// ---- status_url query formu
 app.get("/video/result", async (req, res) => {
   const q = req.query.status_url;
   if (!q) return res.status(400).json({ error: "status_url required" });
