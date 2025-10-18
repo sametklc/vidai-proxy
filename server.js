@@ -1,9 +1,8 @@
-// server.js — SeeDance (bytedance/seedance) proxy
-// Özellikler:
-//  - Text→Video ve Image→Video tek API
-//  - "Ucuz" varsayılanlar: duration=3s, 480p, 16 fps (parametrelerle override edilebilir)
-//  - Replicate stateless: request_id = prediction.id (JOBS tutmuyoruz)
-//  - Android sözleşmesi: { status, request_id, status_url, response_url, job_id, video_url? }
+// server.js — SeeDance (bytedance/seedance) proxy — fps=24 fix
+// - Text→Video ve Image→Video
+// - Ucuz varsayılanlar: duration=3, resolution=480p, fps=24 (API bunu istiyor)
+// - Stateless: request_id = prediction.id
+// - Android sözleşmesi: { status, request_id, status_url, response_url, job_id, video_url? }
 
 import express from "express";
 import multer from "multer";
@@ -21,28 +20,25 @@ if (!REPLICATE_API_TOKEN) {
 
 const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
 
-// SeeDance modeli:
-// - Lite (daha ucuz): bytedance/seedance-1-lite  (480p/720p, 5-10s)
-// - Pro  (daha pahalı): bytedance/seedance-1-pro  (480p/1080p, 5-10s)
-// İstediğini env ile seç: SEEDANCE_MODEL_SLUG veya sabit bırak.
+// Model seçimi: lite (ucuz) veya pro (pahalı)
 const SEEDANCE_MODEL_SLUG =
   process.env.SEEDANCE_MODEL_SLUG || "bytedance/seedance-1-lite";
-// Eğer özel bir sürüm (version id) kullanacaksan (model sayfası > API sekmesi):
+// İstersen spesifik version id ver:
 const SEEDANCE_VERSION_ID = process.env.SEEDANCE_VERSION_ID || null;
 
-// “Ucuz” defaultlar (Replicate şemasıyla uyumlu alanlar)
+// “Ucuz” defaultlar — fps MUTLAKA 24!
 const CHEAP_DEFAULTS = {
-  duration: 3,          // SeeDance min 3, tipik default 5. Düşük tut = daha ucuz.
-  resolution: "480p",   // Lite: 480p/720p; Pro: 480p/1080p
-  fps: 16,              // default genelde 24 → 16 daha ucuz
-  aspect_ratio: "16:9", // T2V için işe yarar, I2V’de genelde yok sayılır
-  watermark: false      // varsa kapalı kalsın
+  duration: 3,          // maliyet düşürmek için kısa tut
+  resolution: "480p",   // lite: 480p/720p, pro: 480p/1080p
+  fps: 24,              // SeeDance API 24 istiyor
+  aspect_ratio: "16:9",
+  watermark: false
 };
 
-// ===== Replicate SDK =====
+// Replicate SDK
 const replicate = new Replicate({ auth: REPLICATE_API_TOKEN });
 
-// ===== Helpers =====
+// Helpers
 function mapStatus(s) {
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
@@ -67,7 +63,6 @@ function findUrlDeep(x) {
     return null;
   }
   if (typeof x === "object") {
-    // sık görülen anahtarlar
     for (const k of ["video", "url", "file", "mp4"]) {
       const v = x[k];
       if (typeof v === "string" && v.startsWith("http")) return v;
@@ -75,7 +70,6 @@ function findUrlDeep(x) {
       if (u) return u;
     }
     if (x.urls && typeof x.urls.get === "string" && x.urls.get.startsWith("http")) return x.urls.get;
-
     for (const k of Object.keys(x)) {
       const u = findUrlDeep(x[k]);
       if (u) return u;
@@ -122,12 +116,14 @@ app.post("/video/generate_text", async (req, res) => {
     const prompt = (b.prompt || "").toString().trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // Ucuz varsayılanları destekle; client gönderirse override
+    // Gelen fps ne olursa olsun 24'e zorluyoruz (API uyumu)
+    const fps = 24;
+
     const input = {
       prompt,
       duration: Number.isFinite(+b.duration) ? +b.duration : CHEAP_DEFAULTS.duration,
       resolution: b.resolution || CHEAP_DEFAULTS.resolution,
-      fps: Number.isFinite(+b.fps) ? +b.fps : CHEAP_DEFAULTS.fps,
+      fps, // ZORLA 24
       aspect_ratio: b.aspect_ratio || CHEAP_DEFAULTS.aspect_ratio,
       watermark: typeof b.watermark === "boolean" ? b.watermark : CHEAP_DEFAULTS.watermark
     };
@@ -138,7 +134,6 @@ app.post("/video/generate_text", async (req, res) => {
 
     const pred = await replicate.predictions.create(createBody);
 
-    // stateless: request_id olarak pred.id dön
     const statusUrl = makeStatusUrl(pred.id);
     return res.json({
       status: "IN_QUEUE",
@@ -158,22 +153,23 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
 
+    // fps 24'e sabit
+    const fps = 24;
+
     const duration   = Number.isFinite(+req.body?.duration) ? +req.body.duration : CHEAP_DEFAULTS.duration;
     const resolution = req.body?.resolution || CHEAP_DEFAULTS.resolution;
-    const fps        = Number.isFinite(+req.body?.fps) ? +req.body.fps : CHEAP_DEFAULTS.fps;
     const watermark  = typeof req.body?.watermark === "string"
       ? req.body.watermark === "true"
       : CHEAP_DEFAULTS.watermark;
 
-    // SeeDance I2V: image veriyoruz; Buffer vermek güvenli
     const input = {
       prompt,
-      image: req.file.buffer,
+      image: req.file.buffer, // Buffer veriyoruz
       duration,
       resolution,
-      fps,
+      fps,        // ZORLA 24
       watermark
-      // aspect_ratio I2V’de genelde yok sayılıyor; göndermiyoruz
+      // aspect_ratio → I2V'de genelde yok sayılıyor; göndermiyoruz
     };
 
     const createBody = SEEDANCE_VERSION_ID
@@ -205,7 +201,7 @@ app.get("/video/result/:id", async (req, res) => {
 
     const body = { status, request_id: predId, job_id: predId };
     if (pred.status === "succeeded" && url) {
-      body.video_url = url; // Replicate temporary URL (1h civarı)
+      body.video_url = url;
     }
     return res.json(body);
   } catch (e) {
