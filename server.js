@@ -1,10 +1,4 @@
-// server.js — SeeDance (bytedance/seedance) proxy — 502 fix, robust result
-// - Text→Video & Image→Video (Replicate)
-// - fps = 24 (SeeDance bunu istiyor)
-// - /video/result  : status_url'ı burada parse edip direkt cevap dönüyor (router bounce yok)
-// - /video/result/:id ile aynı çıktıyı üretir
-// - "video_url" için agresif çıkarım + "succeeded ama URL gelmedi" kısa retry
-
+// server.js — Multi-model proxy (vidai/veo3/wan/sora2)
 import express from "express";
 import multer from "multer";
 import Replicate from "replicate";
@@ -13,42 +7,40 @@ const app = express();
 app.use(express.json({ limit: "16mb" }));
 const upload = multer();
 
-// ===== ENV =====
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
 const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
 
-// Varsayılan model: lite (ucuz). Pro istersen env ile değiştir.
-const SEEDANCE_MODEL_SLUG =
-  process.env.SEEDANCE_MODEL_SLUG || "bytedance/seedance-1-lite";
-// Özel version id (opsiyonel)
-const SEEDANCE_VERSION_ID = process.env.SEEDANCE_VERSION_ID || null;
+// Model ENV (slug + optional version)
+const MODEL_VIDAI_SLUG   = process.env.MODEL_VIDAI_SLUG   || "bytedance/seedance-1-lite";
+const MODEL_VIDAI_VER    = process.env.MODEL_VIDAI_VER    || null;
+
+const MODEL_VEO3_SLUG    = process.env.MODEL_VEO3_SLUG    || "google/veo-3-fast";
+const MODEL_VEO3_VER     = process.env.MODEL_VEO3_VER     || null;
+
+const MODEL_WAN_SLUG     = process.env.MODEL_WAN_SLUG     || ""; // not set by default
+const MODEL_WAN_VER      = process.env.MODEL_WAN_VER      || null;
+
+const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || ""; // not set by default
+const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 const CHEAP_DEFAULTS = {
   duration: 3,
   resolution: "480p",
-  fps: 24,        // SeeDance API enum
   aspect_ratio: "16:9",
   watermark: false
 };
 
 const replicate = new Replicate({ auth: REPLICATE_API_TOKEN });
 
-// ---------- helpers ----------
 function mapStatus(s) {
   if (s === "succeeded") return "COMPLETED";
   if (s === "failed" || s === "canceled") return "FAILED";
   if (s === "starting" || s === "processing" || s === "queued") return "IN_PROGRESS";
   return "IN_QUEUE";
 }
-function makeStatusUrl(requestId) {
-  const path = `/video/result/${requestId}`;
-  return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
-}
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-// URL çıkarma (string/array/object/urls.get/output…)
 function urlFromAny(x) {
   if (!x) return null;
   if (typeof x === "string") return x.startsWith("http") ? x : null;
@@ -87,23 +79,15 @@ function urlFromAny(x) {
   }
   return null;
 }
-
-// Son çare: JSON string içinde http…mp4
-function urlFromJsonString(obj) {
-  try {
-    const s = typeof obj === "string" ? obj : JSON.stringify(obj);
-    const m = s.match(/https?:\/\/[^"'\s]+\.mp4/);
-    return m ? m[0] : null;
-  } catch {
-    return null;
-  }
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+function makeStatusUrl(id) {
+  const path = `/video/result/${id}`;
+  return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
 }
-
 function httpError(res, e) {
   const msg = String(e?.message || e);
   const detail = e?.response?.error || e?.response?.data || e?.stack;
   console.error("[UPSTREAM ERROR]", msg, detail ? "\nDETAIL:" : "", detail || "");
-
   if ((msg.includes("Invalid") && msg.includes("version")) || msg.includes("422")) {
     return res.status(422).json({ error: `Invalid version or input. ${msg}` });
   }
@@ -116,62 +100,76 @@ function httpError(res, e) {
   return res.status(502).json({ error: msg });
 }
 
-// prediction sonucunu tek fonksiyonda üret
-async function buildResultResponse(predId) {
-  // 1) mevcut durum
-  let pred = await replicate.predictions.get(predId);
-  let status = mapStatus(pred.status);
-  let url = urlFromAny(pred.output) || urlFromJsonString(pred.output);
+function resolveModel(modelKey) {
+  const key = (modelKey || "vidai").toLowerCase();
+  switch (key) {
+    case "vidai":
+      return { slug: MODEL_VIDAI_SLUG, version: MODEL_VIDAI_VER, needsFps24: true, supportsImage: true };
+    case "veo3":
+      return { slug: MODEL_VEO3_SLUG, version: MODEL_VEO3_VER, needsFps24: false, supportsImage: true };
+    case "wan":
+      if (!MODEL_WAN_SLUG) throw new Error("WAN model not configured on server.");
+      return { slug: MODEL_WAN_SLUG, version: MODEL_WAN_VER, needsFps24: false, supportsImage: true };
+    case "sora2":
+      if (!MODEL_SORA2_SLUG) throw new Error("Sora-2 model not configured on server.");
+      return { slug: MODEL_SORA2_SLUG, version: MODEL_SORA2_VER, needsFps24: false, supportsImage: true };
+    default:
+      return { slug: MODEL_VIDAI_SLUG, version: MODEL_VIDAI_VER, needsFps24: true, supportsImage: true };
+  }
+}
 
-  // 2) succeeded ama url yoksa: kısa retry (12 x 500ms = 6s)
+async function buildResultResponse(predId) {
+  let pred = await replicate.predictions.get(predId);
+  let url = urlFromAny(pred.output);
   if (pred.status === "succeeded" && !url) {
     for (let i = 0; i < 12; i++) {
       await sleep(500);
       pred = await replicate.predictions.get(predId);
-      url = urlFromAny(pred.output) || urlFromJsonString(pred.output);
+      url = urlFromAny(pred.output);
       if (url) break;
     }
-    status = mapStatus(pred.status);
-    if (!url) {
-      console.warn("[result] succeeded but URL not found — pred.id:", predId, " raw output:", JSON.stringify(pred.output));
-    }
   }
-
-  const body = { status, request_id: predId, job_id: predId };
-  if (pred.status === "succeeded" && url) {
-    body.video_url = url;
-  }
+  const body = { status: mapStatus(pred.status), request_id: predId, job_id: predId };
+  if (pred.status === "succeeded" && url) body.video_url = url;
   return body;
 }
 
-// ---------- health ----------
+// Health
 app.get("/", (_req, res) => {
   res.json({
     ok: true,
-    model: SEEDANCE_VERSION_ID || SEEDANCE_MODEL_SLUG,
-    base_public_url: BASE_PUBLIC_URL || null
+    base_public_url: BASE_PUBLIC_URL || null,
+    defaults: {
+      vidai: MODEL_VIDAI_SLUG,
+      veo3: MODEL_VEO3_SLUG,
+      wan: MODEL_WAN_SLUG || "(not set)",
+      sora2: MODEL_SORA2_SLUG || "(not set)"
+    }
   });
 });
 
-// ---------- Text→Video ----------
+// Text → Video
 app.post("/video/generate_text", async (req, res) => {
   try {
     const b = req.body || {};
     const prompt = (b.prompt || "").toString().trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
+    const modelKey = (b.model || "vidai").toString();
+    const model = resolveModel(modelKey);
+
     const input = {
       prompt,
       duration: Number.isFinite(+b.duration) ? +b.duration : CHEAP_DEFAULTS.duration,
       resolution: b.resolution || CHEAP_DEFAULTS.resolution,
-      fps: 24,
       aspect_ratio: b.aspect_ratio || CHEAP_DEFAULTS.aspect_ratio,
       watermark: typeof b.watermark === "boolean" ? b.watermark : CHEAP_DEFAULTS.watermark
     };
+    if (model.needsFps24) input.fps = 24; // SeeDance gibi
 
-    const createBody = SEEDANCE_VERSION_ID
-      ? { version: SEEDANCE_VERSION_ID, input }
-      : { model: SEEDANCE_MODEL_SLUG,  input };
+    const createBody = model.version
+      ? { version: model.version, input }
+      : { model: model.slug, input };
 
     const pred = await replicate.predictions.create(createBody);
     const statusUrl = makeStatusUrl(pred.id);
@@ -188,11 +186,13 @@ app.post("/video/generate_text", async (req, res) => {
   }
 });
 
-// ---------- Image→Video ----------
+// Image → Video
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
     const prompt = (req.body?.prompt || "").toString();
+    const modelKey = (req.body?.model || "vidai").toString();
+    const model = resolveModel(modelKey);
 
     const duration   = Number.isFinite(+req.body?.duration) ? +req.body.duration : CHEAP_DEFAULTS.duration;
     const resolution = req.body?.resolution || CHEAP_DEFAULTS.resolution;
@@ -205,13 +205,13 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       image: req.file.buffer,
       duration,
       resolution,
-      fps: 24,
       watermark
     };
+    if (model.needsFps24) input.fps = 24;
 
-    const createBody = SEEDANCE_VERSION_ID
-      ? { version: SEEDANCE_VERSION_ID, input }
-      : { model: SEEDANCE_MODEL_SLUG,  input };
+    const createBody = model.version
+      ? { version: model.version, input }
+      : { model: model.slug,  input };
 
     const pred = await replicate.predictions.create(createBody);
     const statusUrl = makeStatusUrl(pred.id);
@@ -228,7 +228,7 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   }
 });
 
-// ---------- Result by id ----------
+// Result by id
 app.get("/video/result/:id", async (req, res) => {
   try {
     const body = await buildResultResponse(req.params.id);
@@ -238,18 +238,15 @@ app.get("/video/result/:id", async (req, res) => {
   }
 });
 
-// ---------- Result by status_url (NO router bounce → 502 fix) ----------
+// Result by status_url
 app.get("/video/result", async (req, res) => {
   try {
     const q = req.query.status_url;
     if (!q) return res.status(400).json({ error: "status_url required" });
-
     const raw = decodeURIComponent(q.toString());
-    // …/video/result/<id> biçiminden id’yi çek
     const parts = raw.split("/").filter(Boolean);
     const id = parts[parts.length - 1];
     if (!id) return res.status(400).json({ error: "invalid status_url" });
-
     const body = await buildResultResponse(id);
     return res.json(body);
   } catch (e) {
