@@ -23,7 +23,7 @@ const MODEL_VEO3_VER     = process.env.MODEL_VEO3_VER     || null;
 const MODEL_WAN_SLUG     = process.env.MODEL_WAN_SLUG     || "wan-video/wan-2.2-i2v-fast"; // ÖRNEK: Kendi modelinle değiştir
 const MODEL_WAN_VER      = process.env.MODEL_WAN_VER      || null;
 
-const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "openai/sora-2"; // ÖRNEK: Kendi modelinle değiştir
+const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "pixverse/pixverse-v5"; // ÖRNEK: Kendi modelinle değiştir
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 // --- DÜZELTME SONU ---
 
