@@ -19,11 +19,13 @@ const MODEL_VIDAI_VER    = process.env.MODEL_VIDAI_VER    || null;
 const MODEL_VEO3_SLUG    = process.env.MODEL_VEO3_SLUG    || "google/veo-3-fast";
 const MODEL_VEO3_VER     = process.env.MODEL_VEO3_VER     || null;
 
-const MODEL_WAN_SLUG     = process.env.MODEL_WAN_SLUG     || ""; // not set by default
+// --- DÜZELTME: WAN ve Sora2 için varsayılan model ataması ---
+const MODEL_WAN_SLUG     = process.env.MODEL_WAN_SLUG     || "wan-video/wan-2.2-i2v-fast"; // ÖRNEK: Kendi modelinle değiştir
 const MODEL_WAN_VER      = process.env.MODEL_WAN_VER      || null;
 
-const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || ""; // not set by default
+const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "openai/sora-2"; // ÖRNEK: Kendi modelinle değiştir
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
+// --- DÜZELTME SONU ---
 
 const CHEAP_DEFAULTS = {
   duration: 3,
