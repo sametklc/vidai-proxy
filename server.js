@@ -3,6 +3,12 @@
 import express from "express";
 import multer from "multer";
 import Replicate from "replicate";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json({ limit: "16mb" }));
@@ -307,20 +313,23 @@ app.get("/video/result", async (req, res) => {
   }
 });
 
-/ Trends endpoint
+// Trends endpoint - GET /trends
 app.get("/trends", async (req, res) => {
   try {
-    // Option 1: JSON dosyasından oku
-    const fs = require('fs');
-    const path = require('path');
     const trendsPath = path.join(__dirname, 'trends_data.json');
-    const trendsData = JSON.parse(fs.readFileSync(trendsPath, 'utf8'));
-    return res.json(trendsData);
+    
+    if (fs.existsSync(trendsPath)) {
+      const trendsData = JSON.parse(fs.readFileSync(trendsPath, 'utf8'));
+      return res.json(trendsData);
+    }
+    
+    console.error("trends_data.json file not found at:", trendsPath);
+    return res.status(404).json({ error: "Trends file not found" });
   } catch (e) {
-    return res.status(500).json({ error: "Failed to load trends" });
+    console.error("Error loading trends:", e);
+    return res.status(500).json({ error: "Failed to load trends: " + e.message });
   }
 });
 
 const port = process.env.PORT || 10000;
 app.listen(port, () => console.log("listening on", port));
-
