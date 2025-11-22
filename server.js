@@ -307,6 +307,20 @@ app.get("/video/result", async (req, res) => {
   }
 });
 
+/ Trends endpoint
+app.get("/trends", async (req, res) => {
+  try {
+    // Option 1: JSON dosyasından oku
+    const fs = require('fs');
+    const path = require('path');
+    const trendsPath = path.join(__dirname, 'trends_data.json');
+    const trendsData = JSON.parse(fs.readFileSync(trendsPath, 'utf8'));
+    return res.json(trendsData);
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to load trends" });
+  }
+});
+
 const port = process.env.PORT || 10000;
 app.listen(port, () => console.log("listening on", port));
 
