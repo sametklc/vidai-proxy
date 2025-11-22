@@ -51,20 +51,20 @@
         },
         {
           "id": "tech2",
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/037/830/original/LC015.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
           "modelKey": "vidai",
           "prompt": "AI-powered future technology"
         },
         {
           "id": "tech3",
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/054/666/original/002094-HD-family-C0097.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
           "modelKey": "vidai",
           "prompt": "AI-powered future technology"
         },{
           "id": "tech4",
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/054/815/original/3187.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
           "modelKey": "vidai",
           "prompt": "AI-powered future technology"
@@ -77,21 +77,21 @@
       "videos": [
         {
           "id": "nature1",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/020/041/original/Diana_Cropped_29.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/039/316/original/17_038_11.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
           "modelKey": "vidai",
           "prompt": "Beautiful mountain sunrise"
         },
         {
           "id": "nature2",
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/034/636/original/car-road-4.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
           "modelKey": "vidai",
           "prompt": "Beautiful mountain sunrise"
         },
         {
           "id": "nature3",
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/038/524/original/2018-01-7-_29_.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
           "modelKey": "vidai",
           "prompt": "Beautiful mountain sunrise"
