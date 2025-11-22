@@ -4,35 +4,35 @@
     {
       "id": "1",
       "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "vidai",
       "prompt": "A futuristic cityscape at sunset"
     },
     {
       "id": "2",
       "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
     },
     {
       "id": "3",
       "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
     },
     {
       "id": "4",
       "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
     },
     {
       "id": "5",
       "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
     }
