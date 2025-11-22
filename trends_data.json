@@ -3,35 +3,35 @@
   "featured": [
     {
       "id": "1",
-      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "videoUrl": "https://static.videezy.com/system/resources/previews/000/039/971/original/17_0016_04.mp4",
       "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "vidai",
       "prompt": "A futuristic cityscape at sunset"
     },
     {
       "id": "2",
-      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "videoUrl": "https://static.videezy.com/system/resources/previews/000/011/192/original/Silhouette_of_young_white_man_3.mp4",
       "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
     },
     {
       "id": "3",
-      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "videoUrl": "https://static.videezy.com/system/resources/previews/000/040/638/original/17_010_05.mp4",
       "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
     },
     {
       "id": "4",
-      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "videoUrl": "https://static.videezy.com/system/resources/previews/000/032/934/original/Mother-and-daughter-finger1.mp4",
       "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
     },
     {
       "id": "5",
-      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "videoUrl": "https://static.videezy.com/system/resources/previews/000/036/709/original/man-looking2.mp4",
       "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
@@ -44,7 +44,7 @@
       "videos": [
         {
           "id": "tech1",
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/042/867/original/05-12-2020-13.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
           "modelKey": "vidai",
           "prompt": "AI-powered future technology"
@@ -77,7 +77,7 @@
       "videos": [
         {
           "id": "nature1",
-          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "videoUrl": "https://static.videezy.com/system/resources/previews/000/020/041/original/Diana_Cropped_29.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
           "modelKey": "vidai",
           "prompt": "Beautiful mountain sunrise"
