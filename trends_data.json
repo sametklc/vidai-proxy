@@ -1,0 +1,48 @@
+```json
+{
+  "featured": [
+    {
+      "id": "1",
+      "videoUrl": "https://example.com/video1.mp4",
+      "thumbnailUrl": "https://example.com/thumb1.jpg",
+      "modelKey": "vidai",
+      "prompt": "A futuristic cityscape at sunset"
+    },
+    {
+      "id": "2",
+      "videoUrl": "https://example.com/video2.mp4",
+      "thumbnailUrl": "https://example.com/thumb2.jpg",
+      "modelKey": "wan",
+      "prompt": "Abstract art with vibrant colors"
+    }
+  ],
+  "categories": [
+    {
+      "id": "tech",
+      "title": "Technology & Innovation",
+      "videos": [
+        {
+          "id": "tech1",
+          "videoUrl": "https://example.com/tech1.mp4",
+          "thumbnailUrl": "https://example.com/tech1.jpg",
+          "modelKey": "vidai",
+          "prompt": "AI-powered future technology"
+        }
+      ]
+    },
+    {
+      "id": "nature",
+      "title": "Nature & Landscapes",
+      "videos": [
+        {
+          "id": "nature1",
+          "videoUrl": "https://example.com/nature1.mp4",
+          "thumbnailUrl": "https://example.com/nature1.jpg",
+          "modelKey": "vidai",
+          "prompt": "Beautiful mountain sunrise"
+        }
+      ]
+    }
+  ]
+}
+```
