@@ -1,4 +1,5 @@
 // server.js — Multi-model proxy (vidai/veo3/wan/sora2)
+
 import express from "express";
 import multer from "multer";
 import Replicate from "replicate";
@@ -26,6 +27,34 @@ const MODEL_WAN_VER      = process.env.MODEL_WAN_VER      || null;
 const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-diff-v3-bonsai"; // ÖRNEK: Kendi modelinle değiştir
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 // --- DÜZELTME SONU ---
+
+// Model-specific defaults
+const MODEL_DEFAULTS = {
+  vidai: {
+    duration: 5,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  wan: {
+    duration: 5,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  veo3: {
+    duration: 4,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  sora2: {
+    duration: 3,
+    resolution: "480p",
+    aspect_ratio: "16:9",
+    watermark: false
+  }
+};
 
 const CHEAP_DEFAULTS = {
   duration: 3,
@@ -81,11 +110,14 @@ function urlFromAny(x) {
   }
   return null;
 }
+
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 function makeStatusUrl(id) {
   const path = `/video/result/${id}`;
   return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
 }
+
 function httpError(res, e) {
   const msg = String(e?.message || e);
   const detail = e?.response?.error || e?.response?.data || e?.stack;
@@ -118,6 +150,11 @@ function resolveModel(modelKey) {
     default:
       return { slug: MODEL_VIDAI_SLUG, version: MODEL_VIDAI_VER, needsFps24: true, supportsImage: true };
   }
+}
+
+function getDefaultsForModel(modelKey) {
+  const key = (modelKey || "vidai").toLowerCase();
+  return MODEL_DEFAULTS[key] || CHEAP_DEFAULTS;
 }
 
 async function buildResultResponse(predId) {
@@ -159,13 +196,20 @@ app.post("/video/generate_text", async (req, res) => {
 
     const modelKey = (b.model || "vidai").toString();
     const model = resolveModel(modelKey);
+    const defaults = getDefaultsForModel(modelKey);
+
+    // Use provided values or fall back to model-specific defaults
+    const duration = Number.isFinite(+b.duration) ? +b.duration : defaults.duration;
+    const resolution = b.resolution || defaults.resolution;
+    const aspect_ratio = b.aspect_ratio || defaults.aspect_ratio;
+    const watermark = typeof b.watermark === "boolean" ? b.watermark : defaults.watermark;
 
     const input = {
       prompt,
-      duration: Number.isFinite(+b.duration) ? +b.duration : CHEAP_DEFAULTS.duration,
-      resolution: b.resolution || CHEAP_DEFAULTS.resolution,
-      aspect_ratio: b.aspect_ratio || CHEAP_DEFAULTS.aspect_ratio,
-      watermark: typeof b.watermark === "boolean" ? b.watermark : CHEAP_DEFAULTS.watermark
+      duration,
+      resolution,
+      aspect_ratio,
+      watermark
     };
     if (model.needsFps24) input.fps = 24; // SeeDance gibi
 
@@ -192,21 +236,26 @@ app.post("/video/generate_text", async (req, res) => {
 app.post("/video/generate_image", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
+
     const prompt = (req.body?.prompt || "").toString();
     const modelKey = (req.body?.model || "vidai").toString();
     const model = resolveModel(modelKey);
+    const defaults = getDefaultsForModel(modelKey);
 
-    const duration   = Number.isFinite(+req.body?.duration) ? +req.body.duration : CHEAP_DEFAULTS.duration;
-    const resolution = req.body?.resolution || CHEAP_DEFAULTS.resolution;
-    const watermark  = typeof req.body?.watermark === "string"
+    // Use provided values or fall back to model-specific defaults
+    const duration = Number.isFinite(+req.body?.duration) ? +req.body.duration : defaults.duration;
+    const resolution = req.body?.resolution || defaults.resolution;
+    const aspect_ratio = req.body?.aspect_ratio || defaults.aspect_ratio;
+    const watermark = typeof req.body?.watermark === "string"
       ? req.body.watermark === "true"
-      : CHEAP_DEFAULTS.watermark;
+      : (typeof req.body?.watermark === "boolean" ? req.body.watermark : defaults.watermark);
 
     const input = {
       prompt,
       image: req.file.buffer,
       duration,
       resolution,
+      aspect_ratio,
       watermark
     };
     if (model.needsFps24) input.fps = 24;
@@ -245,10 +294,12 @@ app.get("/video/result", async (req, res) => {
   try {
     const q = req.query.status_url;
     if (!q) return res.status(400).json({ error: "status_url required" });
+
     const raw = decodeURIComponent(q.toString());
     const parts = raw.split("/").filter(Boolean);
     const id = parts[parts.length - 1];
     if (!id) return res.status(400).json({ error: "invalid status_url" });
+
     const body = await buildResultResponse(id);
     return res.json(body);
   } catch (e) {
@@ -258,3 +309,4 @@ app.get("/video/result", async (req, res) => {
 
 const port = process.env.PORT || 10000;
 app.listen(port, () => console.log("listening on", port));
+
