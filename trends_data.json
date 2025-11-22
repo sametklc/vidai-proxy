@@ -3,14 +3,14 @@
   "featured": [
     {
       "id": "1",
-      "videoUrl": "https://screenapp.io/app/v/RYyGJgXWsw",
+      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
       "thumbnailUrl": "https://example.com/thumb1.jpg",
       "modelKey": "vidai",
       "prompt": "A futuristic cityscape at sunset"
     },
     {
       "id": "2",
-      "videoUrl": "https://screenapp.io/app/v/RYyGJgXWsw",
+      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
       "thumbnailUrl": "https://example.com/thumb2.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
@@ -23,7 +23,7 @@
       "videos": [
         {
           "id": "tech1",
-          "videoUrl": "https://screenapp.io/app/v/RYyGJgXWsw",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
           "thumbnailUrl": "https://example.com/tech1.jpg",
           "modelKey": "vidai",
           "prompt": "AI-powered future technology"
@@ -36,7 +36,7 @@
       "videos": [
         {
           "id": "nature1",
-          "videoUrl": "https://screenapp.io/app/v/RYyGJgXWsw",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
           "thumbnailUrl": "https://example.com/nature1.jpg",
           "modelKey": "vidai",
           "prompt": "Beautiful mountain sunrise"
