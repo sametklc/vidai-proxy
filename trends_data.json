@@ -14,6 +14,27 @@
       "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
       "modelKey": "wan",
       "prompt": "Abstract art with vibrant colors"
+    },
+    {
+      "id": "3",
+      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "modelKey": "wan",
+      "prompt": "Abstract art with vibrant colors"
+    },
+    {
+      "id": "4",
+      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "modelKey": "wan",
+      "prompt": "Abstract art with vibrant colors"
+    },
+    {
+      "id": "5",
+      "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronalpstock_big.jpg",
+      "modelKey": "wan",
+      "prompt": "Abstract art with vibrant colors"
     }
   ],
   "categories": [
@@ -27,6 +48,26 @@
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
           "modelKey": "vidai",
           "prompt": "AI-powered future technology"
+        },
+        {
+          "id": "tech2",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
+          "modelKey": "vidai",
+          "prompt": "AI-powered future technology"
+        },
+        {
+          "id": "tech3",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
+          "modelKey": "vidai",
+          "prompt": "AI-powered future technology"
+        },{
+          "id": "tech4",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
+          "modelKey": "vidai",
+          "prompt": "AI-powered future technology"
         }
       ]
     },
@@ -36,6 +77,20 @@
       "videos": [
         {
           "id": "nature1",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
+          "modelKey": "vidai",
+          "prompt": "Beautiful mountain sunrise"
+        },
+        {
+          "id": "nature2",
+          "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
+          "modelKey": "vidai",
+          "prompt": "Beautiful mountain sunrise"
+        },
+        {
+          "id": "nature3",
           "videoUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
           "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
           "modelKey": "vidai",
