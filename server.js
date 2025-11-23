@@ -420,16 +420,20 @@ app.get("/video/result", async (req, res) => {
 app.get("/trends", async (req, res) => {
   try {
     const trendsPath = path.join(__dirname, 'trends_data.json');
+    console.log(`[TRENDS] Looking for trends_data.json at: ${trendsPath}`);
     
     if (fs.existsSync(trendsPath)) {
-      const trendsData = JSON.parse(fs.readFileSync(trendsPath, 'utf8'));
+      const fileContent = fs.readFileSync(trendsPath, 'utf8');
+      console.log(`[TRENDS] File found, size: ${fileContent.length} bytes`);
+      const trendsData = JSON.parse(fileContent);
+      console.log(`[TRENDS] Parsed successfully: ${trendsData.categories?.length || 0} categories`);
       return res.json(trendsData);
     }
     
-    console.error("trends_data.json file not found at:", trendsPath);
+    console.error("[TRENDS] trends_data.json file not found at:", trendsPath);
     return res.status(404).json({ error: "Trends file not found" });
   } catch (e) {
-    console.error("Error loading trends:", e);
+    console.error("[TRENDS] Error loading trends:", e);
     return res.status(500).json({ error: "Failed to load trends: " + e.message });
   }
 });
