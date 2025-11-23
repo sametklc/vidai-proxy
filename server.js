@@ -33,7 +33,7 @@ const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-d
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 // New models
-const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "stability-ai/stable-video-diffusion-img2video";
+const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "stability-ai/stable-diffusion-3.5-medium";
 const MODEL_SVD_VER       = process.env.MODEL_SVD_VER       || null;
 
 const MODEL_COGX_SLUG     = process.env.MODEL_COGX_SLUG     || "cogvideox/cogvideox-5b";
