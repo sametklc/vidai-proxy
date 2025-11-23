@@ -55,7 +55,7 @@ const MODEL_RUNWAY_VER    = process.env.MODEL_RUNWAY_VER    || null;
 const MODEL_DEFAULTS = {
   vidai: {
     duration: 5,
-    resolution: "720p",
+    resolution: "d720p",
     aspect_ratio: "16:9",
     watermark: false
   },
@@ -79,7 +79,7 @@ const MODEL_DEFAULTS = {
   },
   svd: {
     duration: 4,
-    resolution: "720p",
+    resolution: "480p",
     aspect_ratio: "16:9",
     watermark: false
   },
