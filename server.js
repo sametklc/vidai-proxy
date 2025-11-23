@@ -33,14 +33,14 @@ const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-d
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 // New models
-const MODEL_SVD_SLUG     = process.env.MODEL_SVD_SLUG     || "stability-ai/stable-video-diffusion-img2vid-xt";
-const MODEL_SVD_VER       = process.env.MODEL_SVD_VER     || null;
+const MODEL_RUNWAY_SLUG   = process.env.MODEL_RUNWAY_SLUG   || "runwayml/gen4-turbo";
+const MODEL_RUNWAY_VER    = process.env.MODEL_RUNWAY_VER    || null;
 
-const MODEL_COGX_SLUG    = process.env.MODEL_COGX_SLUG    || "thu-ml/cogvideox";
-const MODEL_COGX_VER     = process.env.MODEL_COGX_VER     || null;
+const MODEL_LUMA_SLUG     = process.env.MODEL_LUMA_SLUG     || "luma/ray";
+const MODEL_LUMA_VER      = process.env.MODEL_LUMA_VER      || null;
 
-const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "lucataco/animate-diff-v3";
-const MODEL_ANIMATEDIFF_VER  = process.env.MODEL_ANIMATEDIFF_VER  || null;
+const MODEL_ZEROSCOPE_SLUG = process.env.MODEL_ZEROSCOPE_SLUG || "anotherjesse/zeroscope-v2-xl";
+const MODEL_ZEROSCOPE_VER  = process.env.MODEL_ZEROSCOPE_VER  || "9f747673945c62801b13b84701c783929c0ee784e4748ec062204894dda1a351";
 
 // Model-specific defaults
 const MODEL_DEFAULTS = {
@@ -68,19 +68,19 @@ const MODEL_DEFAULTS = {
     aspect_ratio: "16:9",
     watermark: false
   },
-  svd: {
-    duration: 4,
-    resolution: "720p",
-    aspect_ratio: "16:9",
-    watermark: false
-  },
-  cogx: {
+  runway: {
     duration: 5,
     resolution: "720p",
     aspect_ratio: "16:9",
     watermark: false
   },
-  animatediff: {
+  luma: {
+    duration: 5,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  zeroscope: {
     duration: 4,
     resolution: "720p",
     aspect_ratio: "16:9",
@@ -179,15 +179,15 @@ function resolveModel(modelKey) {
     case "sora2":
       if (!MODEL_SORA2_SLUG) throw new Error("Sora-2 model not configured on server.");
       return { slug: MODEL_SORA2_SLUG, version: MODEL_SORA2_VER, needsFps24: false, supportsImage: true };
-    case "svd":
-      if (!MODEL_SVD_SLUG) throw new Error("Stable Video Diffusion model not configured on server.");
-      return { slug: MODEL_SVD_SLUG, version: MODEL_SVD_VER, needsFps24: false, supportsImage: true };
-    case "cogx":
-      if (!MODEL_COGX_SLUG) throw new Error("CogVideoX 5B model not configured on server.");
-      return { slug: MODEL_COGX_SLUG, version: MODEL_COGX_VER, needsFps24: false, supportsImage: true };
-    case "animatediff":
-      if (!MODEL_ANIMATEDIFF_SLUG) throw new Error("AnimateDiff model not configured on server.");
-      return { slug: MODEL_ANIMATEDIFF_SLUG, version: MODEL_ANIMATEDIFF_VER, needsFps24: false, supportsImage: true };
+    case "runway":
+      if (!MODEL_RUNWAY_SLUG) throw new Error("Runway model not configured on server.");
+      return { slug: MODEL_RUNWAY_SLUG, version: MODEL_RUNWAY_VER, needsFps24: false, supportsImage: true };
+    case "luma":
+      if (!MODEL_LUMA_SLUG) throw new Error("Luma model not configured on server.");
+      return { slug: MODEL_LUMA_SLUG, version: MODEL_LUMA_VER, needsFps24: false, supportsImage: true };
+    case "zeroscope":
+      if (!MODEL_ZEROSCOPE_SLUG) throw new Error("Zeroscope model not configured on server.");
+      return { slug: MODEL_ZEROSCOPE_SLUG, version: MODEL_ZEROSCOPE_VER, needsFps24: false, supportsImage: true };
     default:
       return { slug: MODEL_VIDAI_SLUG, version: MODEL_VIDAI_VER, needsFps24: true, supportsImage: true };
   }
@@ -224,9 +224,9 @@ app.get("/", (_req, res) => {
       veo3: MODEL_VEO3_SLUG,
       wan: MODEL_WAN_SLUG || "(not set)",
       sora2: MODEL_SORA2_SLUG || "(not set)",
-      svd: MODEL_SVD_SLUG || "(not set)",
-      cogx: MODEL_COGX_SLUG || "(not set)",
-      animatediff: MODEL_ANIMATEDIFF_SLUG || "(not set)"
+      runway: MODEL_RUNWAY_SLUG || "(not set)",
+      luma: MODEL_LUMA_SLUG || "(not set)",
+      zeroscope: MODEL_ZEROSCOPE_SLUG || "(not set)"
     }
   });
 });
@@ -298,27 +298,28 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     let input = {};
     const modelKeyLower = modelKey.toLowerCase();
     
-    if (modelKeyLower === "svd") {
-      // Stable Video Diffusion
-      input = {
-        image: req.file.buffer,
-        motion_bucket_id: 127,
-        cond_aug: 0.02
-      };
-      if (prompt) input.prompt = prompt;
-    } else if (modelKeyLower === "cogx") {
-      // CogVideoX
+    if (modelKeyLower === "runway") {
+      // Runway Gen4 Turbo
       input = {
         image: req.file.buffer,
         prompt: prompt || ""
       };
       if (duration) input.duration = duration;
-    } else if (modelKeyLower === "animatediff") {
-      // AnimateDiff - usually text-to-video, but some versions support image
+      if (resolution) input.resolution = resolution;
+    } else if (modelKeyLower === "luma") {
+      // Luma Ray
+      input = {
+        image: req.file.buffer,
+        prompt: prompt || ""
+      };
+      if (duration) input.duration = duration;
+    } else if (modelKeyLower === "zeroscope") {
+      // Zeroscope v2 XL
       input = {
         prompt: prompt || "",
         image: req.file.buffer
       };
+      if (duration) input.duration = duration;
     } else {
       // Default format for other models
       input = {
