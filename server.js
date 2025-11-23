@@ -33,14 +33,23 @@ const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-d
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 // New models
-const MODEL_RUNWAY_SLUG   = process.env.MODEL_RUNWAY_SLUG   || "runwayml/gen4-turbo";
-const MODEL_RUNWAY_VER    = process.env.MODEL_RUNWAY_VER    || null;
+const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "stability-ai/stable-video-diffusion-img2video";
+const MODEL_SVD_VER       = process.env.MODEL_SVD_VER       || null;
 
-const MODEL_LUMA_SLUG     = process.env.MODEL_LUMA_SLUG     || "luma/ray";
+const MODEL_COGX_SLUG     = process.env.MODEL_COGX_SLUG     || "cogvideox/cogvideox-5b";
+const MODEL_COGX_VER      = process.env.MODEL_COGX_VER      || null;
+
+const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "zsxkib/animatediff-motion-lora";
+const MODEL_ANIMATEDIFF_VER  = process.env.MODEL_ANIMATEDIFF_VER  || null;
+
+const MODEL_LUMA_SLUG     = process.env.MODEL_LUMA_SLUG     || "lumaai/luma-dream-machine";
 const MODEL_LUMA_VER      = process.env.MODEL_LUMA_VER      || null;
 
-const MODEL_ZEROSCOPE_SLUG = process.env.MODEL_ZEROSCOPE_SLUG || "anotherjesse/zeroscope-v2-xl";
-const MODEL_ZEROSCOPE_VER  = process.env.MODEL_ZEROSCOPE_VER  || "9f747673945c62801b13b84701c783929c0ee784e4748ec062204894dda1a351";
+const MODEL_MATINEE_SLUG  = process.env.MODEL_MATINEE_SLUG  || "pixtral/magicanimate";
+const MODEL_MATINEE_VER   = process.env.MODEL_MATINEE_VER   || null;
+
+const MODEL_RUNWAY_SLUG   = process.env.MODEL_RUNWAY_SLUG   || "byterat/cinematic-video";
+const MODEL_RUNWAY_VER    = process.env.MODEL_RUNWAY_VER    || null;
 
 // Model-specific defaults
 const MODEL_DEFAULTS = {
@@ -68,8 +77,20 @@ const MODEL_DEFAULTS = {
     aspect_ratio: "16:9",
     watermark: false
   },
-  runway: {
+  svd: {
+    duration: 4,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  cogx: {
     duration: 5,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  animatediff: {
+    duration: 4,
     resolution: "720p",
     aspect_ratio: "16:9",
     watermark: false
@@ -80,8 +101,14 @@ const MODEL_DEFAULTS = {
     aspect_ratio: "16:9",
     watermark: false
   },
-  zeroscope: {
-    duration: 4,
+  matinee: {
+    duration: 5,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  runway: {
+    duration: 5,
     resolution: "720p",
     aspect_ratio: "16:9",
     watermark: false
@@ -179,15 +206,24 @@ function resolveModel(modelKey) {
     case "sora2":
       if (!MODEL_SORA2_SLUG) throw new Error("Sora-2 model not configured on server.");
       return { slug: MODEL_SORA2_SLUG, version: MODEL_SORA2_VER, needsFps24: false, supportsImage: true };
-    case "runway":
-      if (!MODEL_RUNWAY_SLUG) throw new Error("Runway model not configured on server.");
-      return { slug: MODEL_RUNWAY_SLUG, version: MODEL_RUNWAY_VER, needsFps24: false, supportsImage: true };
+    case "svd":
+      if (!MODEL_SVD_SLUG) throw new Error("SVD model not configured on server.");
+      return { slug: MODEL_SVD_SLUG, version: MODEL_SVD_VER, needsFps24: false, supportsImage: true };
+    case "cogx":
+      if (!MODEL_COGX_SLUG) throw new Error("CogVideoX model not configured on server.");
+      return { slug: MODEL_COGX_SLUG, version: MODEL_COGX_VER, needsFps24: false, supportsImage: true };
+    case "animatediff":
+      if (!MODEL_ANIMATEDIFF_SLUG) throw new Error("AnimateDiff model not configured on server.");
+      return { slug: MODEL_ANIMATEDIFF_SLUG, version: MODEL_ANIMATEDIFF_VER, needsFps24: false, supportsImage: true };
     case "luma":
       if (!MODEL_LUMA_SLUG) throw new Error("Luma model not configured on server.");
       return { slug: MODEL_LUMA_SLUG, version: MODEL_LUMA_VER, needsFps24: false, supportsImage: false };
-    case "zeroscope":
-      if (!MODEL_ZEROSCOPE_SLUG) throw new Error("Zeroscope model not configured on server.");
-      return { slug: MODEL_ZEROSCOPE_SLUG, version: MODEL_ZEROSCOPE_VER, needsFps24: false, supportsImage: false };
+    case "matinee":
+      if (!MODEL_MATINEE_SLUG) throw new Error("Matinee model not configured on server.");
+      return { slug: MODEL_MATINEE_SLUG, version: MODEL_MATINEE_VER, needsFps24: false, supportsImage: true };
+    case "runway":
+      if (!MODEL_RUNWAY_SLUG) throw new Error("Runway model not configured on server.");
+      return { slug: MODEL_RUNWAY_SLUG, version: MODEL_RUNWAY_VER, needsFps24: false, supportsImage: true };
     default:
       return { slug: MODEL_VIDAI_SLUG, version: MODEL_VIDAI_VER, needsFps24: true, supportsImage: true };
   }
@@ -224,9 +260,12 @@ app.get("/", (_req, res) => {
       veo3: MODEL_VEO3_SLUG,
       wan: MODEL_WAN_SLUG || "(not set)",
       sora2: MODEL_SORA2_SLUG || "(not set)",
-      runway: MODEL_RUNWAY_SLUG || "(not set)",
+      svd: MODEL_SVD_SLUG || "(not set)",
+      cogx: MODEL_COGX_SLUG || "(not set)",
+      animatediff: MODEL_ANIMATEDIFF_SLUG || "(not set)",
       luma: MODEL_LUMA_SLUG || "(not set)",
-      zeroscope: MODEL_ZEROSCOPE_SLUG || "(not set)"
+      matinee: MODEL_MATINEE_SLUG || "(not set)",
+      runway: MODEL_RUNWAY_SLUG || "(not set)"
     }
   });
 });
