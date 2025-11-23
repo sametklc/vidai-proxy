@@ -1,4 +1,4 @@
-// server.js — Multi-model proxy (vidai/veo3/wan/sora2)
+// server.js — Multi-model proxy (vidai/veo3/wan/sora2/svd/cogx/animatediff)
 
 import express from "express";
 import multer from "multer";
@@ -26,13 +26,21 @@ const MODEL_VIDAI_VER    = process.env.MODEL_VIDAI_VER    || null;
 const MODEL_VEO3_SLUG    = process.env.MODEL_VEO3_SLUG    || "google/veo-3-fast";
 const MODEL_VEO3_VER     = process.env.MODEL_VEO3_VER     || null;
 
-// --- DÜZELTME: WAN ve Sora2 için varsayılan model ataması ---
-const MODEL_WAN_SLUG     = process.env.MODEL_WAN_SLUG     || "wan-video/wan-2.2-i2v-fast"; // ÖRNEK: Kendi modelinle değiştir
+const MODEL_WAN_SLUG     = process.env.MODEL_WAN_SLUG     || "wan-video/wan-2.2-i2v-fast";
 const MODEL_WAN_VER      = process.env.MODEL_WAN_VER      || null;
 
-const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-diff-v3-bonsai"; // ÖRNEK: Kendi modelinle değiştir
+const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-diff-v3-bonsai";
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
-// --- DÜZELTME SONU ---
+
+// New models
+const MODEL_SVD_SLUG     = process.env.MODEL_SVD_SLUG     || "stability-ai/stable-video-diffusion";
+const MODEL_SVD_VER       = process.env.MODEL_SVD_VER     || null;
+
+const MODEL_COGX_SLUG    = process.env.MODEL_COGX_SLUG    || "thu-ml/cogvideox-5b";
+const MODEL_COGX_VER     = process.env.MODEL_COGX_VER     || null;
+
+const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "lucataco/animate-diff";
+const MODEL_ANIMATEDIFF_VER  = process.env.MODEL_ANIMATEDIFF_VER  || null;
 
 // Model-specific defaults
 const MODEL_DEFAULTS = {
@@ -57,6 +65,24 @@ const MODEL_DEFAULTS = {
   sora2: {
     duration: 3,
     resolution: "480p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  svd: {
+    duration: 4,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  cogx: {
+    duration: 5,
+    resolution: "720p",
+    aspect_ratio: "16:9",
+    watermark: false
+  },
+  animatediff: {
+    duration: 4,
+    resolution: "720p",
     aspect_ratio: "16:9",
     watermark: false
   }
@@ -153,6 +179,15 @@ function resolveModel(modelKey) {
     case "sora2":
       if (!MODEL_SORA2_SLUG) throw new Error("Sora-2 model not configured on server.");
       return { slug: MODEL_SORA2_SLUG, version: MODEL_SORA2_VER, needsFps24: false, supportsImage: true };
+    case "svd":
+      if (!MODEL_SVD_SLUG) throw new Error("Stable Video Diffusion model not configured on server.");
+      return { slug: MODEL_SVD_SLUG, version: MODEL_SVD_VER, needsFps24: false, supportsImage: true };
+    case "cogx":
+      if (!MODEL_COGX_SLUG) throw new Error("CogVideoX 5B model not configured on server.");
+      return { slug: MODEL_COGX_SLUG, version: MODEL_COGX_VER, needsFps24: false, supportsImage: true };
+    case "animatediff":
+      if (!MODEL_ANIMATEDIFF_SLUG) throw new Error("AnimateDiff model not configured on server.");
+      return { slug: MODEL_ANIMATEDIFF_SLUG, version: MODEL_ANIMATEDIFF_VER, needsFps24: false, supportsImage: true };
     default:
       return { slug: MODEL_VIDAI_SLUG, version: MODEL_VIDAI_VER, needsFps24: true, supportsImage: true };
   }
@@ -188,7 +223,10 @@ app.get("/", (_req, res) => {
       vidai: MODEL_VIDAI_SLUG,
       veo3: MODEL_VEO3_SLUG,
       wan: MODEL_WAN_SLUG || "(not set)",
-      sora2: MODEL_SORA2_SLUG || "(not set)"
+      sora2: MODEL_SORA2_SLUG || "(not set)",
+      svd: MODEL_SVD_SLUG || "(not set)",
+      cogx: MODEL_COGX_SLUG || "(not set)",
+      animatediff: MODEL_ANIMATEDIFF_SLUG || "(not set)"
     }
   });
 });
@@ -268,7 +306,7 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     const createBody = model.version
       ? { version: model.version, input }
-      : { model: model.slug,  input };
+      : { model: model.slug, input };
 
     const pred = await replicate.predictions.create(createBody);
     const statusUrl = makeStatusUrl(pred.id);
