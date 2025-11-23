@@ -33,13 +33,13 @@ const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-d
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 // New models
-const MODEL_SVD_SLUG     = process.env.MODEL_SVD_SLUG     || "stability-ai/stable-video-diffusion";
+const MODEL_SVD_SLUG     = process.env.MODEL_SVD_SLUG     || "stability-ai/stable-video-diffusion-img2vid-xt";
 const MODEL_SVD_VER       = process.env.MODEL_SVD_VER     || null;
 
-const MODEL_COGX_SLUG    = process.env.MODEL_COGX_SLUG    || "thu-ml/cogvideox-5b";
+const MODEL_COGX_SLUG    = process.env.MODEL_COGX_SLUG    || "thu-ml/cogvideox";
 const MODEL_COGX_VER     = process.env.MODEL_COGX_VER     || null;
 
-const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "lucataco/animate-diff";
+const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "lucataco/animate-diff-v3";
 const MODEL_ANIMATEDIFF_VER  = process.env.MODEL_ANIMATEDIFF_VER  || null;
 
 // Model-specific defaults
@@ -294,15 +294,43 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       ? req.body.watermark === "true"
       : (typeof req.body?.watermark === "boolean" ? req.body.watermark : defaults.watermark);
 
-    const input = {
-      prompt,
-      image: req.file.buffer,
-      duration,
-      resolution,
-      aspect_ratio,
-      watermark
-    };
-    if (model.needsFps24) input.fps = 24;
+    // Model-specific input formatting
+    let input = {};
+    const modelKeyLower = modelKey.toLowerCase();
+    
+    if (modelKeyLower === "svd") {
+      // Stable Video Diffusion
+      input = {
+        image: req.file.buffer,
+        motion_bucket_id: 127,
+        cond_aug: 0.02
+      };
+      if (prompt) input.prompt = prompt;
+    } else if (modelKeyLower === "cogx") {
+      // CogVideoX
+      input = {
+        image: req.file.buffer,
+        prompt: prompt || ""
+      };
+      if (duration) input.duration = duration;
+    } else if (modelKeyLower === "animatediff") {
+      // AnimateDiff - usually text-to-video, but some versions support image
+      input = {
+        prompt: prompt || "",
+        image: req.file.buffer
+      };
+    } else {
+      // Default format for other models
+      input = {
+        prompt,
+        image: req.file.buffer,
+        duration,
+        resolution,
+        aspect_ratio,
+        watermark
+      };
+      if (model.needsFps24) input.fps = 24;
+    }
 
     const createBody = model.version
       ? { version: model.version, input }
