@@ -1,265 +1,381 @@
 {
-  "featured": [
-    {
-      "id": "f1",
-      "videoUrl": "",
-      "modelKey": "runway",
-      "description": "Woman smiling softly as wind moves through her hair.",
-      "prompt": "Cinematic close-up of a young woman, soft wind blowing hair, looking at camera, subtle smile, blinking eyes, photorealistic 8k."
-    },
-    {
-      "id": "f2",
-      "videoUrl": "",
-      "modelKey": "luma",
-      "description": "Neon-lit cyberpunk girl with wet face and reflections.",
-      "prompt": "Close up of a cyberpunk girl, neon lights reflecting in eyes, rain falling on face, blue and pink lighting, slow breathing."
-    },
-    {
-      "id": "f3",
-      "videoUrl": "",
-      "modelKey": "zeroscope",
-      "description": "Anime samurai under heavy rain holding sword.",
-      "prompt": "Anime style samurai standing in rain, hand on sword hilt, raindrops hitting the hat, dramatic lighting, Studio Ghibli style."
-    }
-  ],
   "categories": [
     {
-      "id": "cinematic",
-      "title": "Cinematic & Realistic Portraits",
+      "id": "birthday",
+      "title": "Birthday Cinematic",
+      "modelKey": "svd",
       "videos": [
         {
-          "id": "cin1",
+          "id": "b1",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Woman smiling with wind in her hair.",
-          "prompt": "Cinematic close-up of a young woman, soft wind blowing hair, looking at camera, subtle smile, blinking eyes, photorealistic 8k."
+          "description": "Happy Birthday Sparkle",
+          "prompt": "Cinematic portrait, golden confetti falling, soft smiling."
         },
         {
-          "id": "cin2",
+          "id": "b2",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Old man smoking a pipe with dramatic lighting.",
-          "prompt": "Portrait of an elderly man, smoke rising slowly from a pipe, deep facial wrinkles, cinematic lighting, slight head turn."
+          "description": "Candle Glow Face Light",
+          "prompt": "Warm candle reflection on face, soft blinking."
         },
         {
-          "id": "cin3",
+          "id": "b3",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Cyberpunk girl with neon reflections.",
-          "prompt": "Close up of a cyberpunk girl, neon lights reflecting in eyes, rain falling on face, blue and pink lighting, slow breathing."
+          "description": "Birthday Neon Text Reveal",
+          "prompt": "Neon 'Happy Birthday' text glowing behind person."
         },
         {
-          "id": "cin4",
+          "id": "b4",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Fashion model posing with camera flashes.",
-          "prompt": "Fashion model posing, camera flashes going off, wind machine effect on hair, confident expression, high contrast studio light."
+          "description": "Confetti Slow Motion",
+          "prompt": "Slow confetti shower, dreamy lighting."
         },
         {
-          "id": "cin5",
+          "id": "b5",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Viking warrior staring intensely in snowfall.",
-          "prompt": "Viking warrior with war paint, snow falling in front of face, intense stare, steam coming from breath, cold atmosphere."
-        },
-        {
-          "id": "cin6",
-          "videoUrl": "",
-          "modelKey": "luma",
-          "description": "1950s vintage photo brought to life.",
-          "prompt": "1950s vintage photo animation, sepia tone, woman waving hand gently, film grain texture, nostalgic feel."
+          "description": "Magical Balloon Rise",
+          "prompt": "Balloons rising behind person, warm daylight."
         }
       ]
     },
+
     {
-      "id": "nature",
-      "title": "Drone, Nature & Landscapes",
+      "id": "polaroid",
+      "title": "Polaroid Memory",
+      "modelKey": "cogx",
       "videos": [
         {
-          "id": "nat1",
+          "id": "p1",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "FPV drone flying over snowy mountains.",
-          "prompt": "Fast FPV drone shot flying over snowy mountain peaks at sunset, motion blur, cinematic lighting, dynamic movement."
+          "description": "Polaroid Film Reveal",
+          "prompt": "Polaroid film slowly developing with vintage colors."
         },
         {
-          "id": "nat2",
+          "id": "p2",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Top-down ocean waves hitting beach.",
-          "prompt": "Top-down aerial view of blue ocean waves crashing onto a white sandy beach, foam textures, looping water motion."
+          "description": "Shaky Handheld Polaroid",
+          "prompt": "Handheld polaroid camera shake with soft blur."
         },
         {
-          "id": "nat3",
+          "id": "p3",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Drone flying through a foggy pine forest.",
-          "prompt": "Drone camera moving forward through a foggy pine forest, morning light beams piercing through trees, mysterious atmosphere."
+          "description": "Retro Flash Pop",
+          "prompt": "Retro camera flash pop illuminating the face."
         },
         {
-          "id": "nat4",
+          "id": "p4",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "City skyline time-lapse at night.",
-          "prompt": "Time-lapse of a city skyline at night, car lights creating trails, clouds moving fast, cyberpunk city atmosphere."
+          "description": "Dusty Film Grain Animation",
+          "prompt": "Dusty vintage film grain moving across frame."
         },
         {
-          "id": "nat5",
+          "id": "p5",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Wind blowing over desert sand dunes.",
-          "prompt": "Low angle shot of desert sand dunes, sand blowing across the surface, heat haze effect, bright sun flare."
-        },
-        {
-          "id": "nat6",
-          "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Slow motion majestic waterfall.",
-          "prompt": "Majestic waterfall pouring down, water mist rising, rainbow visible in the spray, slow camera pan right."
+          "description": "Polaroid Falling onto Table",
+          "prompt": "Polaroid photo falling onto wooden table softly."
         }
       ]
     },
+
     {
-      "id": "stylized",
-      "title": "Anime, 3D & Stylized Art",
+      "id": "car-mod",
+      "title": "Car Modification",
+      "modelKey": "luma",
       "videos": [
         {
-          "id": "sty1",
+          "id": "c1",
           "videoUrl": "",
-          "modelKey": "zeroscope",
-          "description": "Anime samurai in rain.",
-          "prompt": "Anime style samurai standing in rain, hand on sword hilt, raindrops hitting the hat, dramatic lighting, Studio Ghibli style."
+          "description": "Car neon mod transformation",
+          "prompt": "Car transforming with neon glow visual upgrade."
         },
         {
-          "id": "sty2",
+          "id": "c2",
           "videoUrl": "",
-          "modelKey": "zeroscope",
-          "description": "Anime cyber girl with glitch effect.",
-          "prompt": "Anime cyber girl profile, digital glitch effects overlay, glowing headphones, futuristic interface elements, neon colors."
+          "description": "Rim + body kit change",
+          "prompt": "Rims and body kit changing in a smooth transition."
         },
         {
-          "id": "sty3",
+          "id": "c3",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Cute dancing 3D monster.",
-          "prompt": "Cute fluffy 3D monster character dancing happily, squishy texture, bright colorful background, Pixar style rendering."
+          "description": "Night glow modification",
+          "prompt": "Car glowing with neon underglow at night."
         },
         {
-          "id": "sty4",
+          "id": "c4",
           "videoUrl": "",
-          "modelKey": "zeroscope",
-          "description": "Fantasy wizard casting a spell.",
-          "prompt": "Fantasy wizard character, raising staff, magical blue energy gathering at the tip, robes blowing in wind, oil painting style."
+          "description": "Before/after tuning split reveal",
+          "prompt": "Split-screen before/after tuning reveal animation."
         },
         {
-          "id": "sty5",
+          "id": "c5",
           "videoUrl": "",
-          "modelKey": "zeroscope",
-          "description": "Lofi girl studying with cat.",
-          "prompt": "Lofi hip hop girl writing in a notebook, cat sleeping on table, rain outside window, cozy room, 2D animation style."
-        },
-        {
-          "id": "sty6",
-          "videoUrl": "",
-          "modelKey": "zeroscope",
-          "description": "Watercolor flower blooming.",
-          "prompt": "Watercolor painting of a rose blooming, ink spreading on paper, artistic transition, pastel colors."
+          "description": "Turbo engine cinematic glow",
+          "prompt": "Turbo engine glowing with cinematic lighting."
         }
       ]
     },
+
     {
-      "id": "product",
-      "title": "Product & Commercial",
+      "id": "levitation",
+      "title": "Flying Levitation",
+      "modelKey": "svd",
       "videos": [
         {
-          "id": "pro1",
+          "id": "fl1",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Perfume bottle water splash slow motion.",
-          "prompt": "Cinematic shot of a perfume bottle, water splashing around it in slow motion, elegant lighting, sharp focus on bottle."
+          "description": "Soft levitation above floor",
+          "prompt": "Person gently levitating a few cm above the floor."
         },
         {
-          "id": "pro2",
+          "id": "fl2",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Cold soda can with condensation.",
-          "prompt": "Macro shot of a cold soda can, water droplets dripping down, spinning slowly, refreshing atmosphere, ice particles."
+          "description": "Clothes floating slightly",
+          "prompt": "Clothes lightly floating as if affected by magic energy."
         },
         {
-          "id": "pro3",
+          "id": "fl3",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Levitating sneakers rotating 360 degrees.",
-          "prompt": "A pair of sneakers levitating and rotating 360 degrees, dynamic colorful background, professional studio lighting."
+          "description": "Magic dust floating around",
+          "prompt": "Soft magic dust particles floating around body."
         },
         {
-          "id": "pro4",
+          "id": "fl4",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Hot coffee steam rising.",
-          "prompt": "Close up of a coffee cup, steam rising beautifully, morning sunlight hitting the steam, cozy cafe vibes."
+          "description": "Dreamlike slow-motion rise",
+          "prompt": "Dreamlike slow-motion levitation rising effect."
         },
         {
-          "id": "pro5",
+          "id": "fl5",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Melting cheese dripping off burger.",
-          "prompt": "Macro shot of a burger, cheese melting down the side, steam rising, mouth-watering lighting, slow zoom in."
-        },
-        {
-          "id": "pro6",
-          "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Smartphone cinematic light reveal.",
-          "prompt": "Smartphone spinning on a dark reflective surface, sleek light beams passing over the screen, futuristic tech commercial."
+          "description": "Cinematic wind swirl",
+          "prompt": "Wind swirling around person gently while levitating."
         }
       ]
     },
+
     {
-      "id": "scifi",
-      "title": "Sci-Fi & VFX",
+      "id": "dance",
+      "title": "Dance Motion",
+      "modelKey": "cogx",
       "videos": [
         {
-          "id": "sc1",
+          "id": "d1",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Spaceship flying past a giant planet.",
-          "prompt": "Cinematic shot of a spaceship flying past a giant ringed planet, stars moving in background, engine glow, sci-fi movie scene."
+          "description": "Hip-hop head + shoulder move",
+          "prompt": "Smooth hip-hop head and shoulder movement."
         },
         {
-          "id": "sc2",
+          "id": "d2",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Magical swirling energy portal.",
-          "prompt": "A mystical portal glowing purple, swirling energy particles, sparks flying, dark fantasy background, VFX heavy."
+          "description": "Smooth slow body sway",
+          "prompt": "Gentle slow body sway in rhythmic motion."
         },
         {
-          "id": "sc3",
+          "id": "d3",
           "videoUrl": "",
-          "modelKey": "runway",
-          "description": "Zombie hand rising from grave.",
-          "prompt": "Horror scene, zombie hand rising from the dirt, fog covering the ground, moonlight, spooky atmosphere."
+          "description": "Club neon dance",
+          "prompt": "Dance movement with club neon lights."
         },
         {
-          "id": "sc4",
+          "id": "d4",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Slow motion explosion with fire.",
-          "prompt": "Cinematic explosion in slow motion, fire and debris flying towards camera, black background, high contrast action."
+          "description": "Retro disco move",
+          "prompt": "Retro disco dance motion with vintage colors."
         },
         {
-          "id": "sc5",
+          "id": "d5",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Clouds morphing into horses.",
-          "prompt": "White fluffy clouds in a blue sky morphing into the shape of horses running, dreamlike atmosphere, surreal transformation."
+          "description": "AI choreographed dance loop",
+          "prompt": "Elegantly choreographed dance loop animation."
+        }
+      ]
+    },
+
+    {
+      "id": "monochrome",
+      "title": "Monochrome Aesthetic",
+      "modelKey": "svd",
+      "videos": [
+        {
+          "id": "m1",
+          "videoUrl": "",
+          "description": "Noir blinking portrait",
+          "prompt": "Noir-style black and white portrait with soft blinking."
         },
         {
-          "id": "sc6",
+          "id": "m2",
           "videoUrl": "",
-          "modelKey": "luma",
-          "description": "Wormhole warp-speed travel effect.",
-          "prompt": "Camera moving at light speed through a wormhole, streaks of light, warping space, star wars hyperspace effect."
+          "description": "Grainy high-contrast shadow move",
+          "prompt": "High-contrast monochrome shadow movement with grain."
+        },
+        {
+          "id": "m3",
+          "videoUrl": "",
+          "description": "Slow zoom vintage style",
+          "prompt": "Slow cinematic zoom in vintage monochrome tone."
+        },
+        {
+          "id": "m4",
+          "videoUrl": "",
+          "description": "Old film scratches",
+          "prompt": "Old film scratch overlays moving across frame."
+        },
+        {
+          "id": "m5",
+          "videoUrl": "",
+          "description": "Black & white emotional frame",
+          "prompt": "Emotional black and white portrait moment."
+        }
+      ]
+    },
+
+    {
+      "id": "wings",
+      "title": "Angel Wings FX",
+      "modelKey": "matinee",
+      "videos": [
+        {
+          "id": "w1",
+          "videoUrl": "",
+          "description": "Wings opening behind person",
+          "prompt": "Angel wings opening softly behind the person."
+        },
+        {
+          "id": "w2",
+          "videoUrl": "",
+          "description": "Golden particle glow",
+          "prompt": "Golden particles forming a magical glowing halo."
+        },
+        {
+          "id": "w3",
+          "videoUrl": "",
+          "description": "Celestial light rays",
+          "prompt": "Heavenly light rays shining dramatically behind subject."
+        },
+        {
+          "id": "w4",
+          "videoUrl": "",
+          "description": "Soft magical aura",
+          "prompt": "Soft magical aura pulsing around person."
+        },
+        {
+          "id": "w5",
+          "videoUrl": "",
+          "description": "White feathers floating",
+          "prompt": "White angel feathers floating down slowly."
+        }
+      ]
+    },
+
+    {
+      "id": "anime",
+      "title": "Anime Portrait",
+      "modelKey": "animatediff",
+      "videos": [
+        {
+          "id": "a1",
+          "videoUrl": "",
+          "description": "Anime blinking close-up",
+          "prompt": "Soft anime-style blinking close-up portrait."
+        },
+        {
+          "id": "a2",
+          "videoUrl": "",
+          "description": "Wind blowing hair",
+          "prompt": "Anime wind blowing through hair gently."
+        },
+        {
+          "id": "a3",
+          "videoUrl": "",
+          "description": "Sparkle eyes animation",
+          "prompt": "Cute sparkle animation in anime-style eyes."
+        },
+        {
+          "id": "a4",
+          "videoUrl": "",
+          "description": "Anime background parallax",
+          "prompt": "Parallax anime background movement behind character."
+        },
+        {
+          "id": "a5",
+          "videoUrl": "",
+          "description": "Soft pastel anime loop",
+          "prompt": "Pastel-toned soft anime portrait loop."
+        }
+      ]
+    },
+
+    {
+      "id": "cyberpunk",
+      "title": "Cyberpunk Neon",
+      "modelKey": "cogx",
+      "videos": [
+        {
+          "id": "cy1",
+          "videoUrl": "",
+          "description": "Neon reflections on face",
+          "prompt": "Blue and pink neon reflections glowing on face."
+        },
+        {
+          "id": "cy2",
+          "videoUrl": "",
+          "description": "Cyber glitch effect",
+          "prompt": "Cyberpunk digital glitch overlay animation."
+        },
+        {
+          "id": "cy3",
+          "videoUrl": "",
+          "description": "Rain droplets neon city",
+          "prompt": "Neon-lit rain droplets falling on face."
+        },
+        {
+          "id": "cy4",
+          "videoUrl": "",
+          "description": "Hologram scan effect",
+          "prompt": "Face being scanned by futuristic hologram lines."
+        },
+        {
+          "id": "cy5",
+          "videoUrl": "",
+          "description": "Neon flicker portrait",
+          "prompt": "Neon lights flickering over cyberpunk portrait."
+        }
+      ]
+    },
+
+    {
+      "id": "trailer",
+      "title": "Film Trailer Look",
+      "modelKey": "runway",
+      "videos": [
+        {
+          "id": "t1",
+          "videoUrl": "",
+          "description": "Slow dramatic zoom",
+          "prompt": "Slow dramatic cinematic zoom with intense shading."
+        },
+        {
+          "id": "t2",
+          "videoUrl": "",
+          "description": "Dust particle cinematic",
+          "prompt": "Floating dust particles with cinematic light beams."
+        },
+        {
+          "id": "t3",
+          "videoUrl": "",
+          "description": "Action trailer movement",
+          "prompt": "High-energy action trailer-style movement."
+        },
+        {
+          "id": "t4",
+          "videoUrl": "",
+          "description": "Dark noir film intro",
+          "prompt": "Dark noir-inspired film introduction scene."
+        },
+        {
+          "id": "t5",
+          "videoUrl": "",
+          "description": "Heroic spotlight look",
+          "prompt": "Heroic dramatic face lighting from above."
         }
       ]
     }
