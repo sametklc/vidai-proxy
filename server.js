@@ -184,10 +184,10 @@ function resolveModel(modelKey) {
       return { slug: MODEL_RUNWAY_SLUG, version: MODEL_RUNWAY_VER, needsFps24: false, supportsImage: true };
     case "luma":
       if (!MODEL_LUMA_SLUG) throw new Error("Luma model not configured on server.");
-      return { slug: MODEL_LUMA_SLUG, version: MODEL_LUMA_VER, needsFps24: false, supportsImage: true };
+      return { slug: MODEL_LUMA_SLUG, version: MODEL_LUMA_VER, needsFps24: false, supportsImage: false };
     case "zeroscope":
       if (!MODEL_ZEROSCOPE_SLUG) throw new Error("Zeroscope model not configured on server.");
-      return { slug: MODEL_ZEROSCOPE_SLUG, version: MODEL_ZEROSCOPE_VER, needsFps24: false, supportsImage: true };
+      return { slug: MODEL_ZEROSCOPE_SLUG, version: MODEL_ZEROSCOPE_VER, needsFps24: false, supportsImage: false };
     default:
       return { slug: MODEL_VIDAI_SLUG, version: MODEL_VIDAI_VER, needsFps24: true, supportsImage: true };
   }
@@ -284,6 +284,12 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     const prompt = (req.body?.prompt || "").toString();
     const modelKey = (req.body?.model || "vidai").toString();
     const model = resolveModel(modelKey);
+    
+    // Check if model supports image-to-video
+    if (!model.supportsImage) {
+      return res.status(400).json({ error: `Model ${modelKey} does not support image-to-video. Please use text-to-video endpoint.` });
+    }
+    
     const defaults = getDefaultsForModel(modelKey);
 
     // Use provided values or fall back to model-specific defaults
@@ -306,20 +312,6 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       };
       if (duration) input.duration = duration;
       if (resolution) input.resolution = resolution;
-    } else if (modelKeyLower === "luma") {
-      // Luma Ray
-      input = {
-        image: req.file.buffer,
-        prompt: prompt || ""
-      };
-      if (duration) input.duration = duration;
-    } else if (modelKeyLower === "zeroscope") {
-      // Zeroscope v2 XL
-      input = {
-        prompt: prompt || "",
-        image: req.file.buffer
-      };
-      if (duration) input.duration = duration;
     } else {
       // Default format for other models
       input = {
