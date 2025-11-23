@@ -1,100 +1,270 @@
-
 {
   "featured": [
     {
-      "id": "1",
-      "videoUrl": "https://static.videezy.com/system/resources/previews/000/039/971/original/17_0016_04.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-      "modelKey": "vidai",
-      "prompt": "A futuristic cityscape at sunset"
+      "id": "f1",
+      "videoUrl": "",
+      "modelKey": "svd",
+      "description": "Woman smiling softly as wind moves through her hair.",
+      "prompt": "Cinematic close-up of a young woman, soft wind blowing hair, looking at camera, subtle smile, blinking eyes, photorealistic 8k."
     },
     {
-      "id": "2",
-      "videoUrl": "https://static.videezy.com/system/resources/previews/000/011/192/original/Silhouette_of_young_white_man_3.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-      "modelKey": "wan",
-      "prompt": "Abstract art with vibrant colors"
+      "id": "f2",
+      "videoUrl": "",
+      "modelKey": "cogx",
+      "description": "Neon-lit cyberpunk girl with wet face and reflections.",
+      "prompt": "Close up of a cyberpunk girl, neon lights reflecting in eyes, rain falling on face, blue and pink lighting, slow breathing."
     },
     {
-      "id": "3",
-      "videoUrl": "https://static.videezy.com/system/resources/previews/000/040/638/original/17_010_05.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-      "modelKey": "wan",
-      "prompt": "Abstract art with vibrant colors"
-    },
-    {
-      "id": "4",
-      "videoUrl": "https://static.videezy.com/system/resources/previews/000/032/934/original/Mother-and-daughter-finger1.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-      "modelKey": "wan",
-      "prompt": "Abstract art with vibrant colors"
-    },
-    {
-      "id": "5",
-      "videoUrl": "https://static.videezy.com/system/resources/previews/000/036/709/original/man-looking2.mp4",
-      "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-      "modelKey": "wan",
-      "prompt": "Abstract art with vibrant colors"
+      "id": "f3",
+      "videoUrl": "",
+      "modelKey": "animatediff",
+      "description": "Anime samurai under heavy rain holding sword.",
+      "prompt": "Anime style samurai standing in rain, hand on sword hilt, raindrops hitting the hat, dramatic lighting, Studio Ghibli style."
     }
   ],
+
   "categories": [
     {
-      "id": "tech",
-      "title": "Technology & Innovation",
+      "id": "cinematic",
+      "title": "Cinematic & Realistic Portraits",
       "videos": [
         {
-          "id": "tech1",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/042/867/original/05-12-2020-13.mp4",
-          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-          "modelKey": "vidai",
-          "prompt": "AI-powered future technology"
+          "id": "cin1",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Woman smiling with wind in her hair.",
+          "prompt": "Cinematic close-up of a young woman, soft wind blowing hair, looking at camera, subtle smile, blinking eyes, photorealistic 8k."
         },
         {
-          "id": "tech2",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/037/830/original/LC015.mp4",
-          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-          "modelKey": "vidai",
-          "prompt": "AI-powered future technology"
+          "id": "cin2",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Old man smoking a pipe with dramatic lighting.",
+          "prompt": "Portrait of an elderly man, smoke rising slowly from a pipe, deep facial wrinkles, cinematic lighting, slight head turn."
         },
         {
-          "id": "tech3",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/054/666/original/002094-HD-family-C0097.mp4",
-          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-          "modelKey": "vidai",
-          "prompt": "AI-powered future technology"
-        },{
-          "id": "tech4",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/054/815/original/3187.mp4",
-          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tiger.50.jpg",
-          "modelKey": "vidai",
-          "prompt": "AI-powered future technology"
+          "id": "cin3",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Cyberpunk girl with neon reflections.",
+          "prompt": "Close up of a cyberpunk girl, neon lights reflecting in eyes, rain falling on face, blue and pink lighting, slow breathing."
+        },
+        {
+          "id": "cin4",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Fashion model posing with camera flashes.",
+          "prompt": "Fashion model posing, camera flashes going off, wind machine effect on hair, confident expression, high contrast studio light."
+        },
+        {
+          "id": "cin5",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Viking warrior staring intensely in snowfall.",
+          "prompt": "Viking warrior with war paint, snow falling in front of face, intense stare, steam coming from breath, cold atmosphere."
+        },
+        {
+          "id": "cin6",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "1950s vintage photo brought to life.",
+          "prompt": "1950s vintage photo animation, sepia tone, woman waving hand gently, film grain texture, nostalgic feel."
         }
       ]
     },
+
     {
       "id": "nature",
-      "title": "Nature & Landscapes",
+      "title": "Drone, Nature & Landscapes",
       "videos": [
         {
-          "id": "nature1",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/039/316/original/17_038_11.mp4",
-          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
-          "modelKey": "vidai",
-          "prompt": "Beautiful mountain sunrise"
+          "id": "nat1",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "FPV drone flying over snowy mountains.",
+          "prompt": "Fast FPV drone shot flying over snowy mountain peaks at sunset, motion blur, cinematic lighting, dynamic movement."
         },
         {
-          "id": "nature2",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/034/636/original/car-road-4.mp4",
-          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
-          "modelKey": "vidai",
-          "prompt": "Beautiful mountain sunrise"
+          "id": "nat2",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Top-down ocean waves hitting beach.",
+          "prompt": "Top-down aerial view of blue ocean waves crashing onto a white sandy beach, foam textures, looping water motion."
         },
         {
-          "id": "nature3",
-          "videoUrl": "https://static.videezy.com/system/resources/previews/000/038/524/original/2018-01-7-_29_.mp4",
-          "thumbnailUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Golde33443.jpg",
-          "modelKey": "vidai",
-          "prompt": "Beautiful mountain sunrise"
+          "id": "nat3",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Drone flying through a foggy pine forest.",
+          "prompt": "Drone camera moving forward through a foggy pine forest, morning light beams piercing through trees, mysterious atmosphere."
+        },
+        {
+          "id": "nat4",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "City skyline time-lapse at night.",
+          "prompt": "Time-lapse of a city skyline at night, car lights creating trails, clouds moving fast, cyberpunk city atmosphere."
+        },
+        {
+          "id": "nat5",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Wind blowing over desert sand dunes.",
+          "prompt": "Low angle shot of desert sand dunes, sand blowing across the surface, heat haze effect, bright sun flare."
+        },
+        {
+          "id": "nat6",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Slow motion majestic waterfall.",
+          "prompt": "Majestic waterfall pouring down, water mist rising, rainbow visible in the spray, slow camera pan right."
+        }
+      ]
+    },
+
+    {
+      "id": "stylized",
+      "title": "Anime, 3D & Stylized Art",
+      "videos": [
+        {
+          "id": "sty1",
+          "videoUrl": "",
+          "modelKey": "animatediff",
+          "description": "Anime samurai in rain.",
+          "prompt": "Anime style samurai standing in rain, hand on sword hilt, raindrops hitting the hat, dramatic lighting, Studio Ghibli style."
+        },
+        {
+          "id": "sty2",
+          "videoUrl": "",
+          "modelKey": "animatediff",
+          "description": "Anime cyber girl with glitch effect.",
+          "prompt": "Anime cyber girl profile, digital glitch effects overlay, glowing headphones, futuristic interface elements, neon colors."
+        },
+        {
+          "id": "sty3",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Cute dancing 3D monster.",
+          "prompt": "Cute fluffy 3D monster character dancing happily, squishy texture, bright colorful background, Pixar style rendering."
+        },
+        {
+          "id": "sty4",
+          "videoUrl": "",
+          "modelKey": "animatediff",
+          "description": "Fantasy wizard casting a spell.",
+          "prompt": "Fantasy wizard character, raising staff, magical blue energy gathering at the tip, robes blowing in wind, oil painting style."
+        },
+        {
+          "id": "sty5",
+          "videoUrl": "",
+          "modelKey": "animatediff",
+          "description": "Lofi girl studying with cat.",
+          "prompt": "Lofi hip hop girl writing in a notebook, cat sleeping on table, rain outside window, cozy room, 2D animation style."
+        },
+        {
+          "id": "sty6",
+          "videoUrl": "",
+          "modelKey": "animatediff",
+          "description": "Watercolor flower blooming.",
+          "prompt": "Watercolor painting of a rose blooming, ink spreading on paper, artistic transition, pastel colors."
+        }
+      ]
+    },
+
+    {
+      "id": "product",
+      "title": "Product & Commercial",
+      "videos": [
+        {
+          "id": "pro1",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Perfume bottle water splash slow motion.",
+          "prompt": "Cinematic shot of a perfume bottle, water splashing around it in slow motion, elegant lighting, sharp focus on bottle."
+        },
+        {
+          "id": "pro2",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Cold soda can with condensation.",
+          "prompt": "Macro shot of a cold soda can, water droplets dripping down, spinning slowly, refreshing atmosphere, ice particles."
+        },
+        {
+          "id": "pro3",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Levitating sneakers rotating 360 degrees.",
+          "prompt": "A pair of sneakers levitating and rotating 360 degrees, dynamic colorful background, professional studio lighting."
+        },
+        {
+          "id": "pro4",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Hot coffee steam rising.",
+          "prompt": "Close up of a coffee cup, steam rising beautifully, morning sunlight hitting the steam, cozy cafe vibes."
+        },
+        {
+          "id": "pro5",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Melting cheese dripping off burger.",
+          "prompt": "Macro shot of a burger, cheese melting down the side, steam rising, mouth-watering lighting, slow zoom in."
+        },
+        {
+          "id": "pro6",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Smartphone cinematic light reveal.",
+          "prompt": "Smartphone spinning on a dark reflective surface, sleek light beams passing over the screen, futuristic tech commercial."
+        }
+      ]
+    },
+
+    {
+      "id": "scifi",
+      "title": "Sci-Fi & VFX",
+      "videos": [
+        {
+          "id": "sc1",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Spaceship flying past a giant planet.",
+          "prompt": "Cinematic shot of a spaceship flying past a giant ringed planet, stars moving in background, engine glow, sci-fi movie scene."
+        },
+        {
+          "id": "sc2",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Magical swirling energy portal.",
+          "prompt": "A mystical portal glowing purple, swirling energy particles, sparks flying, dark fantasy background, VFX heavy."
+        },
+        {
+          "id": "sc3",
+          "videoUrl": "",
+          "modelKey": "svd",
+          "description": "Zombie hand rising from grave.",
+          "prompt": "Horror scene, zombie hand rising from the dirt, fog covering the ground, moonlight, spooky atmosphere."
+        },
+        {
+          "id": "sc4",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Slow motion explosion with fire.",
+          "prompt": "Cinematic explosion in slow motion, fire and debris flying towards camera, black background, high contrast action."
+        },
+        {
+          "id": "sc5",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Clouds morphing into horses.",
+          "prompt": "White fluffy clouds in a blue sky morphing into the shape of horses running, dreamlike atmosphere, surreal transformation."
+        },
+        {
+          "id": "sc6",
+          "videoUrl": "",
+          "modelKey": "cogx",
+          "description": "Wormhole warp-speed travel effect.",
+          "prompt": "Camera moving at light speed through a wormhole, streaks of light, warping space, star wars hyperspace effect."
         }
       ]
     }
