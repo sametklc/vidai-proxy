@@ -329,8 +329,12 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       ? { version: model.version, input }
       : { model: model.slug, input };
 
+    console.log(`[IMAGE-TO-VIDEO] Model: ${modelKey}, Input keys:`, Object.keys(input));
+    
     const pred = await replicate.predictions.create(createBody);
     const statusUrl = makeStatusUrl(pred.id);
+
+    console.log(`[IMAGE-TO-VIDEO] Prediction created: ${pred.id}, Status: ${pred.status}`);
 
     return res.json({
       status: "IN_QUEUE",
@@ -340,6 +344,7 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       job_id: pred.id
     });
   } catch (e) {
+    console.error(`[IMAGE-TO-VIDEO ERROR] Model: ${req.body?.model || "unknown"}, Error:`, e);
     return httpError(res, e);
   }
 });
