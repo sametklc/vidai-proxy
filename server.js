@@ -61,7 +61,7 @@ const MODEL_DEFAULTS = {
   },
   wan: {
     duration: 5,
-    resolution: "720p",
+    resolution: "480p", // Changed to 480p for bundle videos
     aspect_ratio: "16:9",
     watermark: false
   },
@@ -78,8 +78,8 @@ const MODEL_DEFAULTS = {
     watermark: false
   },
   svd: {
-    duration: 4,
-    resolution: "720p",
+    duration: 5, // Kling only supports 5 or 10 seconds - using 5 for lower cost
+    resolution: "480p", // Reduced resolution to lower cost
     aspect_ratio: "16:9",
     watermark: false
   },
