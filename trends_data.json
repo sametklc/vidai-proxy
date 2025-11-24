@@ -9,31 +9,31 @@
           "id": "b1",
           "videoUrl": "",
           "description": "Happy Birthday Sparkle",
-          "prompt": "Cinematic portrait, golden confetti falling, soft smiling."
+          "prompt": "A cinematic portrait with golden confetti gently falling around the subject, soft warm lighting illuminating the face, subtle sparkles drifting through the air, and a joyful birthday atmosphere with smooth slow-motion movement."
         },
         {
           "id": "b2",
           "videoUrl": "",
           "description": "Candle Glow Face Light",
-          "prompt": "Warm candle reflection on face, soft blinking."
+          "prompt": "Warm candlelight reflecting softly on the person's face, creating a cozy birthday ambiance with gentle shadows, intimate warm tones, and natural blinking captured in a slow cinematic style."
         },
         {
           "id": "b3",
           "videoUrl": "",
           "description": "Birthday Neon Text Reveal",
-          "prompt": "Neon 'Happy Birthday' text glowing behind person."
+          "prompt": "Glowing neon 'Happy Birthday' text appearing behind the person, vibrant neon reflections lighting the edges of the face, with a cinematic backdrop and subtle lighting transitions as the text reveals itself."
         },
         {
           "id": "b4",
           "videoUrl": "",
           "description": "Confetti Slow Motion",
-          "prompt": "Slow confetti shower, dreamy lighting."
+          "prompt": "A dreamy slow-motion scene with colorful confetti falling gracefully around the subject, soft ambient lighting, shallow depth of field, and an elegant celebratory mood."
         },
         {
           "id": "b5",
           "videoUrl": "",
           "description": "Magical Balloon Rise",
-          "prompt": "Balloons rising behind person, warm daylight."
+          "prompt": "Balloons floating upward behind the person in warm daylight, soft atmospheric lighting, subtle breeze effects, and a magical uplifting birthday feeling with a cinematic camera movement."
         }
       ]
     },
@@ -46,31 +46,31 @@
           "id": "p1",
           "videoUrl": "",
           "description": "Polaroid Film Reveal",
-          "prompt": "Polaroid film slowly developing with vintage colors."
+          "prompt": "A vintage polaroid film slowly developing with nostalgic colors, soft chemical-like fade-in effect, and warm retro tones creating an authentic analog reveal animation."
         },
         {
           "id": "p2",
           "videoUrl": "",
           "description": "Shaky Handheld Polaroid",
-          "prompt": "Handheld polaroid camera shake with soft blur."
+          "prompt": "Handheld polaroid camera motion with gentle shakes, subtle blur transitions, soft film colors, and a nostalgic documentary-like feeling."
         },
         {
           "id": "p3",
           "videoUrl": "",
           "description": "Retro Flash Pop",
-          "prompt": "Retro camera flash pop illuminating the face."
+          "prompt": "A retro camera flash bursting brightly and illuminating the subject’s face with 80s-style tones, soft bloom effect, and warm vintage color grading."
         },
         {
           "id": "p4",
           "videoUrl": "",
           "description": "Dusty Film Grain Animation",
-          "prompt": "Dusty vintage film grain moving across frame."
+          "prompt": "Vintage film grain and dust particles moving across the frame, soft flickering light inconsistencies, and a realistically aged polaroid texture."
         },
         {
           "id": "p5",
           "videoUrl": "",
           "description": "Polaroid Falling onto Table",
-          "prompt": "Polaroid photo falling onto wooden table softly."
+          "prompt": "A soft cinematic shot of a polaroid photo gently falling onto a wooden table, natural lighting, slight motion blur, and a warm nostalgic mood."
         }
       ]
     },
@@ -83,31 +83,31 @@
           "id": "c1",
           "videoUrl": "",
           "description": "Car neon mod transformation",
-          "prompt": "Car transforming with neon glow visual upgrade."
+          "prompt": "A car undergoing a neon-themed transformation with glowing accents, futuristic lighting effects, smooth transitions, and dynamic reflections along the body."
         },
         {
           "id": "c2",
           "videoUrl": "",
           "description": "Rim + body kit change",
-          "prompt": "Rims and body kit changing in a smooth transition."
+          "prompt": "Rims and body kit shifting seamlessly in a smooth transformation animation, metallic reflections, cinematic lighting, and clean visual transitions."
         },
         {
           "id": "c3",
           "videoUrl": "",
           "description": "Night glow modification",
-          "prompt": "Car glowing with neon underglow at night."
+          "prompt": "A nighttime neon glow transformation with underglow lights, reflective surfaces, deep shadows, and cyberpunk-inspired atmosphere."
         },
         {
           "id": "c4",
           "videoUrl": "",
           "description": "Before/after tuning split reveal",
-          "prompt": "Split-screen before/after tuning reveal animation."
+          "prompt": "A split-screen reveal transitioning between the car's stock form and its tuned version, clean symmetry, smooth sliding animation, and professional cinematic lighting."
         },
         {
           "id": "c5",
           "videoUrl": "",
           "description": "Turbo engine cinematic glow",
-          "prompt": "Turbo engine glowing with cinematic lighting."
+          "prompt": "A cinematic close-up of a turbo engine with glowing highlights, mechanical textures, subtle fog, and dramatic lighting emphasizing power and performance."
         }
       ]
     },
@@ -120,31 +120,31 @@
           "id": "fl1",
           "videoUrl": "",
           "description": "Soft levitation above floor",
-          "prompt": "Person gently levitating a few cm above the floor."
+          "prompt": "A person gently levitating a few centimeters above the ground, soft magical lighting, subtle shadow lift, and a calm dreamlike atmosphere."
         },
         {
           "id": "fl2",
           "videoUrl": "",
           "description": "Clothes floating slightly",
-          "prompt": "Clothes lightly floating as if affected by magic energy."
+          "prompt": "Clothes gently floating as if touched by invisible magical energy, soft air currents, delicate motion, and an ethereal cinematic mood."
         },
         {
           "id": "fl3",
           "videoUrl": "",
           "description": "Magic dust floating around",
-          "prompt": "Soft magic dust particles floating around body."
+          "prompt": "Soft magical dust particles swirling around the subject, glowing specs, slow-motion atmosphere, and a mystical enchanted vibe."
         },
         {
           "id": "fl4",
           "videoUrl": "",
           "description": "Dreamlike slow-motion rise",
-          "prompt": "Dreamlike slow-motion levitation rising effect."
+          "prompt": "Dreamlike slow-motion levitation with smooth upward motion, soft lighting gradients, airy atmosphere, and a surreal cinematic feeling."
         },
         {
           "id": "fl5",
           "videoUrl": "",
           "description": "Cinematic wind swirl",
-          "prompt": "Wind swirling around person gently while levitating."
+          "prompt": "Gentle wind swirling around the person while levitating, flowing hair and clothes, soft dynamic particles, and a magical atmospheric tone."
         }
       ]
     },
@@ -157,31 +157,31 @@
           "id": "d1",
           "videoUrl": "",
           "description": "Hip-hop head + shoulder move",
-          "prompt": "Smooth hip-hop head and shoulder movement."
+          "prompt": "Smooth hip-hop head and shoulder movement with rhythmic flow, subtle camera sway, and stylish street-dance energy."
         },
         {
           "id": "d2",
           "videoUrl": "",
           "description": "Smooth slow body sway",
-          "prompt": "Gentle slow body sway in rhythmic motion."
+          "prompt": "Gentle slow rhythmic body sway, soft ambient lighting, and fluid cinematic motion creating a calming dance loop."
         },
         {
           "id": "d3",
           "videoUrl": "",
           "description": "Club neon dance",
-          "prompt": "Dance movement with club neon lights."
+          "prompt": "Dance motion illuminated by vibrant club neon lights, colorful reflections, energetic mood, and smooth rhythmic body movement."
         },
         {
           "id": "d4",
           "videoUrl": "",
           "description": "Retro disco move",
-          "prompt": "Retro disco dance motion with vintage colors."
+          "prompt": "Retro disco-style dance animation with vintage colors, glowing highlights, and rhythmic movement reminiscent of classic disco scenes."
         },
         {
           "id": "d5",
           "videoUrl": "",
           "description": "AI choreographed dance loop",
-          "prompt": "Elegantly choreographed dance loop animation."
+          "prompt": "Elegant AI-choreographed dance loop with smooth arm and body flow, soft lighting gradients, and a clean rhythmic aesthetic."
         }
       ]
     },
@@ -194,31 +194,31 @@
           "id": "m1",
           "videoUrl": "",
           "description": "Noir blinking portrait",
-          "prompt": "Noir-style black and white portrait with soft blinking."
+          "prompt": "A noir-style black and white portrait with soft subtle blinking, dramatic shadows, high contrast lighting, and a classic film noir ambiance."
         },
         {
           "id": "m2",
           "videoUrl": "",
           "description": "Grainy high-contrast shadow move",
-          "prompt": "High-contrast monochrome shadow movement with grain."
+          "prompt": "High-contrast monochrome portrait with grainy textures, dramatic shadow movement, and an intense vintage film look."
         },
         {
           "id": "m3",
           "videoUrl": "",
           "description": "Slow zoom vintage style",
-          "prompt": "Slow cinematic zoom in vintage monochrome tone."
+          "prompt": "A slow cinematic zoom in a vintage monochrome style, soft gradients, and a nostalgic emotional tone."
         },
         {
           "id": "m4",
           "videoUrl": "",
           "description": "Old film scratches",
-          "prompt": "Old film scratch overlays moving across frame."
+          "prompt": "Old film-style scratch overlays drifting across the frame, subtle flickering, and realistic monochromatic film texture."
         },
         {
           "id": "m5",
           "videoUrl": "",
           "description": "Black & white emotional frame",
-          "prompt": "Emotional black and white portrait moment."
+          "prompt": "A black-and-white emotional portrait with soft lighting, expressive facial detail, and a timeless classic cinematic mood."
         }
       ]
     },
@@ -231,31 +231,31 @@
           "id": "w1",
           "videoUrl": "",
           "description": "Wings opening behind person",
-          "prompt": "Angel wings opening softly behind the person."
+          "prompt": "Soft angel wings opening gracefully behind the person, gentle glowing edges, and an ethereal atmospheric light source."
         },
         {
           "id": "w2",
           "videoUrl": "",
           "description": "Golden particle glow",
-          "prompt": "Golden particles forming a magical glowing halo."
+          "prompt": "Golden magical particles forming a radiant glowing halo around the person, soft shimmering movement, and a divine cinematic effect."
         },
         {
           "id": "w3",
           "videoUrl": "",
           "description": "Celestial light rays",
-          "prompt": "Heavenly light rays shining dramatically behind subject."
+          "prompt": "Heavenly light rays shining behind the subject, soft volumetric glow, and a celestial divine atmosphere."
         },
         {
           "id": "w4",
           "videoUrl": "",
           "description": "Soft magical aura",
-          "prompt": "Soft magical aura pulsing around person."
+          "prompt": "A soft magical aura pulsing gently around the person, subtle shimmering lights, and a dreamy enchanted feeling."
         },
         {
           "id": "w5",
           "videoUrl": "",
           "description": "White feathers floating",
-          "prompt": "White angel feathers floating down slowly."
+          "prompt": "White angel feathers drifting slowly downward, soft air movement, and an uplifting heavenly visual mood."
         }
       ]
     },
@@ -268,31 +268,31 @@
           "id": "a1",
           "videoUrl": "",
           "description": "Anime blinking close-up",
-          "prompt": "Soft anime-style blinking close-up portrait."
+          "prompt": "A close-up anime-style portrait with soft blinking, shining eyes, pastel shading, and gentle character-like expression."
         },
         {
           "id": "a2",
           "videoUrl": "",
           "description": "Wind blowing hair",
-          "prompt": "Anime wind blowing through hair gently."
+          "prompt": "Anime-style hair gently blowing in the wind, soft lighting, smooth fluttering motion, and a calming dreamy atmosphere."
         },
         {
           "id": "a3",
           "videoUrl": "",
           "description": "Sparkle eyes animation",
-          "prompt": "Cute sparkle animation in anime-style eyes."
+          "prompt": "Cute anime-style eye sparkles glowing softly with delicate light reflections and gentle blinking."
         },
         {
           "id": "a4",
           "videoUrl": "",
           "description": "Anime background parallax",
-          "prompt": "Parallax anime background movement behind character."
+          "prompt": "Anime-style parallax background moving subtly behind the character, pastel colors, and a soothing animated scene."
         },
         {
           "id": "a5",
           "videoUrl": "",
           "description": "Soft pastel anime loop",
-          "prompt": "Pastel-toned soft anime portrait loop."
+          "prompt": "A soft pastel-colored anime portrait loop with gentle motion, warm lighting, and calm expressive visuals."
         }
       ]
     },
@@ -305,31 +305,31 @@
           "id": "cy1",
           "videoUrl": "",
           "description": "Neon reflections on face",
-          "prompt": "Blue and pink neon reflections glowing on face."
+          "prompt": "Blue and pink neon reflections glowing across the face, cyberpunk-inspired lighting, deep shadows, and atmospheric futuristic mood."
         },
         {
           "id": "cy2",
           "videoUrl": "",
           "description": "Cyber glitch effect",
-          "prompt": "Cyberpunk digital glitch overlay animation."
+          "prompt": "A futuristic cyberpunk glitch animation overlaying the portrait, digital distortion, chromatic edges, and sci-fi hologram vibes."
         },
         {
           "id": "cy3",
           "videoUrl": "",
           "description": "Rain droplets neon city",
-          "prompt": "Neon-lit rain droplets falling on face."
+          "prompt": "Neon-lit rain droplets falling dramatically over the subject's face, with moody city reflections and cyberpunk aesthetics."
         },
         {
           "id": "cy4",
           "videoUrl": "",
           "description": "Hologram scan effect",
-          "prompt": "Face being scanned by futuristic hologram lines."
+          "prompt": "A futuristic holographic scan sweeping across the face with glowing lines, sci-fi reflections, and digital scanning light effects."
         },
         {
           "id": "cy5",
           "videoUrl": "",
           "description": "Neon flicker portrait",
-          "prompt": "Neon lights flickering over cyberpunk portrait."
+          "prompt": "Neon lights flickering softly across a cyberpunk portrait, deep shadows, reflective highlights, and atmospheric futuristic tone."
         }
       ]
     },
@@ -342,31 +342,31 @@
           "id": "t1",
           "videoUrl": "",
           "description": "Slow dramatic zoom",
-          "prompt": "Slow dramatic cinematic zoom with intense shading."
+          "prompt": "A slow dramatic cinematic zoom with intense shading, deep contrast, and a strong emotional film-trailer atmosphere."
         },
         {
           "id": "t2",
           "videoUrl": "",
           "description": "Dust particle cinematic",
-          "prompt": "Floating dust particles with cinematic light beams."
+          "prompt": "Floating dust particles illuminated by soft cinematic beams of light, creating a mysterious film-trailer ambience."
         },
         {
           "id": "t3",
           "videoUrl": "",
           "description": "Action trailer movement",
-          "prompt": "High-energy action trailer-style movement."
+          "prompt": "High-energy action trailer movement with dynamic lighting, fast cinematic tension, and dramatic atmosphere."
         },
         {
           "id": "t4",
           "videoUrl": "",
           "description": "Dark noir film intro",
-          "prompt": "Dark noir-inspired film introduction scene."
+          "prompt": "A dark noir-inspired film opening with deep shadows, soft film grain, monochrome tones, and dramatic atmospheric lighting."
         },
         {
           "id": "t5",
           "videoUrl": "",
           "description": "Heroic spotlight look",
-          "prompt": "Heroic dramatic face lighting from above."
+          "prompt": "Heroic dramatic lighting from above, strong directional shadows, cinematic tension, and a powerful film-trailer look."
         }
       ]
     }
