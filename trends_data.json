@@ -3,7 +3,7 @@
     {
       "id": "birthday",
       "title": "Birthday Cinematic",
-      "modelKey": "svd",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "b1",
@@ -37,11 +37,10 @@
         }
       ]
     },
-
     {
       "id": "polaroid",
       "title": "Polaroid Memory",
-      "modelKey": "cogx",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "p1",
@@ -75,11 +74,10 @@
         }
       ]
     },
-
     {
       "id": "car-mod",
       "title": "Car Modification",
-      "modelKey": "luma",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "c1",
@@ -113,11 +111,10 @@
         }
       ]
     },
-
     {
       "id": "levitation",
       "title": "Flying Levitation",
-      "modelKey": "svd",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "fl1",
@@ -151,11 +148,10 @@
         }
       ]
     },
-
     {
       "id": "dance",
       "title": "Dance Motion",
-      "modelKey": "cogx",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "d1",
@@ -189,11 +185,10 @@
         }
       ]
     },
-
     {
       "id": "monochrome",
       "title": "Monochrome Aesthetic",
-      "modelKey": "svd",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "m1",
@@ -227,11 +222,10 @@
         }
       ]
     },
-
     {
       "id": "wings",
       "title": "Angel Wings FX",
-      "modelKey": "matinee",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "w1",
@@ -265,11 +259,10 @@
         }
       ]
     },
-
     {
       "id": "anime",
       "title": "Anime Portrait",
-      "modelKey": "animatediff",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "a1",
@@ -303,11 +296,10 @@
         }
       ]
     },
-
     {
       "id": "cyberpunk",
       "title": "Cyberpunk Neon",
-      "modelKey": "cogx",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "cy1",
@@ -341,11 +333,10 @@
         }
       ]
     },
-
     {
       "id": "trailer",
       "title": "Film Trailer Look",
-      "modelKey": "runway",
+      "modelKey": "wan",
       "videos": [
         {
           "id": "t1",
