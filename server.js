@@ -1,4 +1,4 @@
-// server.js — Multi-model proxy (vidai/veo3/wan/sora2/svd/cogx/animatediff)
+// server.js — Multi-model proxy (vidai/veo3/wan/sora2/kling/cogx/animatediff)
 
 import express from "express";
 import multer from "multer";
@@ -33,8 +33,7 @@ const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-d
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 // New models
-// NOTE: These model slugs may not exist on Replicate. Update with correct slugs when available.
-const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "stability-ai/stable-video-diffusion"; // Try alternative slug
+const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "kwaivgi/kling-v2.1"; // Kling model
 const MODEL_SVD_VER       = process.env.MODEL_SVD_VER       || null;
 
 const MODEL_COGX_SLUG     = process.env.MODEL_COGX_SLUG     || "THUDM/cogvideox"; // Try alternative slug
@@ -208,7 +207,7 @@ function resolveModel(modelKey) {
       if (!MODEL_SORA2_SLUG) throw new Error("Sora-2 model not configured on server.");
       return { slug: MODEL_SORA2_SLUG, version: MODEL_SORA2_VER, needsFps24: false, supportsImage: true };
     case "svd":
-      if (!MODEL_SVD_SLUG) throw new Error("SVD model not configured on server.");
+      if (!MODEL_SVD_SLUG) throw new Error("Kling model not configured on server.");
       return { slug: MODEL_SVD_SLUG, version: MODEL_SVD_VER, needsFps24: false, supportsImage: true };
     case "cogx":
       if (!MODEL_COGX_SLUG) throw new Error("CogVideoX model not configured on server.");
@@ -353,12 +352,12 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       if (duration) input.duration = duration;
       if (resolution) input.resolution = resolution;
     } else if (modelKeyLower === "svd") {
-      // Kling model (svd) uses start_image instead of image
+      // Kling model uses start_image instead of image
       input = {
         start_image: req.file.buffer,
         prompt: prompt || ""
       };
-      // Kling may have different parameter names, adjust as needed
+      // Kling parameters - adjust based on API documentation
       if (duration) input.duration = duration;
       if (resolution) input.resolution = resolution;
       if (aspect_ratio) input.aspect_ratio = aspect_ratio;
