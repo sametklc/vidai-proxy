@@ -81,31 +81,31 @@
       "videos": [
         {
           "id": "c1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcar%2FVidAI_3657FC19-08FA-47A0-96FA-4B4DFEA5FA65.mp4?alt=media",
           "description": "Car neon mod transformation",
           "prompt": "A car undergoing a neon-themed transformation with glowing accents, futuristic lighting effects, smooth transitions, and dynamic reflections along the body."
         },
         {
           "id": "c2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcar%2FVidAI_EE05241D-3CB5-4DF5-B6BB-685947955103.mp4?alt=media",
           "description": "Rim + body kit change",
           "prompt": "Rims and body kit shifting seamlessly in a smooth transformation animation, metallic reflections, cinematic lighting, and clean visual transitions."
         },
         {
           "id": "c3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcar%2FVidAI_02BAD1AF-B851-4C38-98C5-DDB3118A0DCD.mp4?alt=media",
           "description": "Night glow modification",
           "prompt": "A nighttime neon glow transformation with underglow lights, reflective surfaces, deep shadows, and cyberpunk-inspired atmosphere."
         },
         {
           "id": "c4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcar%2FVidAI_BEDB0506-37E1-4742-A345-014CB5D2B140.mp4?alt=media",
           "description": "Before/after tuning split reveal",
           "prompt": "A split-screen reveal transitioning between the car's stock form and its tuned version, clean symmetry, smooth sliding animation, and professional cinematic lighting."
         },
         {
           "id": "c5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcar%2FVidAI_28ADD20E-D51C-413E-AEAD-AE87269FAA32.mp4?alt=media",
           "description": "Turbo engine cinematic glow",
           "prompt": "A cinematic close-up of a turbo engine with glowing highlights, mechanical textures, subtle fog, and dramatic lighting emphasizing power and performance."
         }
