@@ -7,31 +7,31 @@
       "videos": [
         {
           "id": "b1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ff4d52b87-682a-418e-908d-7151bdc47be6.mp4?alt=media",
           "description": "Happy Birthday Sparkle",
           "prompt": "A cinematic portrait with golden confetti gently falling around the subject, soft warm lighting illuminating the face, subtle sparkles drifting through the air, and a joyful birthday atmosphere with smooth slow-motion movement."
         },
         {
           "id": "b2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_7E59C6B9-0D2D-4A15-B757-F02D9D298E04.mp4?alt=media",
           "description": "Candle Glow Face Light",
           "prompt": "Warm candlelight reflecting softly on the person's face, creating a cozy birthday ambiance with gentle shadows, intimate warm tones, and natural blinking captured in a slow cinematic style."
         },
         {
           "id": "b3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_AC84DC63-60B8-4923-9CB3-993523A9FD4F.mp4?alt=media",
           "description": "Birthday Neon Text Reveal",
           "prompt": "Glowing neon 'Happy Birthday' text appearing behind the person, vibrant neon reflections lighting the edges of the face, with a cinematic backdrop and subtle lighting transitions as the text reveals itself."
         },
         {
           "id": "b4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_6B65039A-3F1C-439A-9149-76B89C454006.mp4?alt=media",
           "description": "Confetti Slow Motion",
           "prompt": "A dreamy slow-motion scene with colorful confetti falling gracefully around the subject, soft ambient lighting, shallow depth of field, and an elegant celebratory mood."
         },
         {
           "id": "b5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_10130F8A-5269-49DD-BC1B-FBA7C4004D64.mp4?alt=media",
           "description": "Magical Balloon Rise",
           "prompt": "Balloons floating upward behind the person in warm daylight, soft atmospheric lighting, subtle breeze effects, and a magical uplifting birthday feeling with a cinematic camera movement."
         }
