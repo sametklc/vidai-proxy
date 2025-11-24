@@ -125,9 +125,10 @@
         {
           "id": "fl2",
           "videoUrl": "",
-          "description": "Clothes floating slightly",
-          "prompt": "Clothes gently floating as if touched by invisible magical energy, soft air currents, delicate motion, and an ethereal cinematic mood."
+          "description": "Gentle mid-air rotation effect",
+          "prompt": "A person’s body performing a slow, controlled mid-air rotation, as if suspended by an unseen force. Subtle lighting shifts, soft drifting particles, and a dreamy cinematic levitation atmosphere. The motion feels weightless, smooth, and slightly surreal, with fabric and hair responding naturally to the floating movement."
         },
+
         {
           "id": "fl3",
           "videoUrl": "",
