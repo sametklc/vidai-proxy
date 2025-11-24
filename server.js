@@ -33,13 +33,14 @@ const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-d
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 // New models
-const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "kwaivgi/kling-v2.1";
+// NOTE: These model slugs may not exist on Replicate. Update with correct slugs when available.
+const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "stability-ai/stable-video-diffusion"; // Try alternative slug
 const MODEL_SVD_VER       = process.env.MODEL_SVD_VER       || null;
 
-const MODEL_COGX_SLUG     = process.env.MODEL_COGX_SLUG     || "cogvideox/cogvideox-5b";
+const MODEL_COGX_SLUG     = process.env.MODEL_COGX_SLUG     || "THUDM/cogvideox"; // Try alternative slug
 const MODEL_COGX_VER      = process.env.MODEL_COGX_VER      || null;
 
-const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "zsxkib/animatediff-motion-lora";
+const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "guoyww/animatediff-motion-lora-zoom-out"; // Try alternative slug
 const MODEL_ANIMATEDIFF_VER  = process.env.MODEL_ANIMATEDIFF_VER  || null;
 
 const MODEL_LUMA_SLUG     = process.env.MODEL_LUMA_SLUG     || "lumaai/luma-dream-machine";
@@ -55,7 +56,7 @@ const MODEL_RUNWAY_VER    = process.env.MODEL_RUNWAY_VER    || null;
 const MODEL_DEFAULTS = {
   vidai: {
     duration: 5,
-    resolution: "d720p",
+    resolution: "720p",
     aspect_ratio: "16:9",
     watermark: false
   },
@@ -79,7 +80,7 @@ const MODEL_DEFAULTS = {
   },
   svd: {
     duration: 4,
-    resolution: "480p",
+    resolution: "720p",
     aspect_ratio: "16:9",
     watermark: false
   },
@@ -351,6 +352,16 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       };
       if (duration) input.duration = duration;
       if (resolution) input.resolution = resolution;
+    } else if (modelKeyLower === "svd") {
+      // Kling model (svd) uses start_image instead of image
+      input = {
+        start_image: req.file.buffer,
+        prompt: prompt || ""
+      };
+      // Kling may have different parameter names, adjust as needed
+      if (duration) input.duration = duration;
+      if (resolution) input.resolution = resolution;
+      if (aspect_ratio) input.aspect_ratio = aspect_ratio;
     } else {
       // Default format for other models
       input = {
