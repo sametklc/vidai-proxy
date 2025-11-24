@@ -44,31 +44,31 @@
       "videos": [
         {
           "id": "p1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_CEA44A45-70A7-4F78-9F3B-19C6D8FDF232.mp4?alt=media",
           "description": "Polaroid Film Reveal",
           "prompt": "A vintage polaroid film slowly developing with nostalgic colors, soft chemical-like fade-in effect, and warm retro tones creating an authentic analog reveal animation."
         },
         {
           "id": "p2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_663835A6-BCEB-4BB2-9AA3-4DCF088BEAC4.mp4?alt=media",
           "description": "Shaky Handheld Polaroid",
           "prompt": "Handheld polaroid camera motion with gentle shakes, subtle blur transitions, soft film colors, and a nostalgic documentary-like feeling."
         },
         {
           "id": "p3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_F460B88A-3D5A-422B-BB42-BAF1485DFCDA.mp4?alt=media",
           "description": "Retro Flash Pop",
           "prompt": "A retro camera flash bursting brightly and illuminating the subject’s face with 80s-style tones, soft bloom effect, and warm vintage color grading."
         },
         {
           "id": "p4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_CB62B62B-3FB5-4443-8A21-EF09CBE06BCD.mp4?alt=media",
           "description": "Dusty Film Grain Animation",
           "prompt": "Vintage film grain and dust particles moving across the frame, soft flickering light inconsistencies, and a realistically aged polaroid texture."
         },
         {
           "id": "p5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_DAD9459C-AD4F-4CA1-B65F-E8800B8C131A.mp4?alt=media",
           "description": "Polaroid Falling onto Table",
           "prompt": "A soft cinematic shot of a polaroid photo gently falling onto a wooden table, natural lighting, slight motion blur, and a warm nostalgic mood."
         }
