@@ -156,31 +156,31 @@
       "videos": [
         {
           "id": "d1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fdance%2FVidAI_67A796B2-7029-47CE-9433-8DB57634F710.mp4?alt=media",
           "description": "Hip-hop head + shoulder move",
           "prompt": "Smooth hip-hop head and shoulder movement with rhythmic flow, subtle camera sway, and stylish street-dance energy."
         },
         {
           "id": "d2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fdance%2FVidAI_EE5C612A-F975-46F8-91B5-43D689C5DCB7.mp4?alt=media",
           "description": "Smooth slow body sway",
           "prompt": "Gentle slow rhythmic body sway, soft ambient lighting, and fluid cinematic motion creating a calming dance loop."
         },
         {
           "id": "d3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fdance%2FVidAI_E435BAC7-2736-434A-97A5-E96416F30680.mp4?alt=media",
           "description": "Club neon dance",
           "prompt": "Dance motion illuminated by vibrant club neon lights, colorful reflections, energetic mood, and smooth rhythmic body movement."
         },
         {
           "id": "d4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fdance%2FVidAI_2C444A2B-D9E0-43DD-B7BA-CCB4B46C5888.mp4?alt=media",
           "description": "Retro disco move",
           "prompt": "Retro disco-style dance animation with vintage colors, glowing highlights, and rhythmic movement reminiscent of classic disco scenes."
         },
         {
           "id": "d5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fdance%2FVidAI_A3CB4211-2F18-4AE8-97CC-A84DCAB380F0.mp4?alt=media",
           "description": "AI choreographed dance loop",
           "prompt": "Elegant AI-choreographed dance loop with smooth arm and body flow, soft lighting gradients, and a clean rhythmic aesthetic."
         }
