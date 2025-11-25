@@ -304,31 +304,31 @@
       "videos": [
         {
           "id": "cy1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcyber%2FVidAI_DD0443AC-5839-4AEE-B31B-5B7D1ECA1DC7.mp4?alt=media",
           "description": "Neon reflections on face",
           "prompt": "Blue and pink neon reflections glowing across the face, cyberpunk-inspired lighting, deep shadows, and atmospheric futuristic mood."
         },
         {
           "id": "cy2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcyber%2FVidAI_C27350B8-9EDF-4B4B-8279-BE6EB4793C1D.mp4?alt=media",
           "description": "Cyber glitch effect",
           "prompt": "A futuristic cyberpunk glitch animation overlaying the portrait, digital distortion, chromatic edges, and sci-fi hologram vibes."
         },
         {
           "id": "cy3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcyber%2FVidAI_DC47E8A2-331F-442F-9151-0668F3592DCA.mp4?alt=media",
           "description": "Rain droplets neon city",
           "prompt": "Neon-lit rain droplets falling dramatically over the subject's face, with moody city reflections and cyberpunk aesthetics."
         },
         {
           "id": "cy4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcyber%2FVidAI_56096D8E-3796-44A6-B273-19E2E1BB3EDD.mp4?alt=media",
           "description": "Hologram scan effect",
           "prompt": "A futuristic holographic scan sweeping across the face with glowing lines, sci-fi reflections, and digital scanning light effects."
         },
         {
           "id": "cy5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fcyber%2FVidAI_767B1A3D-4F31-4ABB-847B-0DABBD9BC51A.mp4?alt=media",
           "description": "Neon flicker portrait",
           "prompt": "Neon lights flickering softly across a cyberpunk portrait, deep shadows, reflective highlights, and atmospheric futuristic tone."
         }
