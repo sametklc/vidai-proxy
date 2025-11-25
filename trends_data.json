@@ -261,43 +261,6 @@
       ]
     },
     {
-      "id": "anime",
-      "title": "Anime Portrait",
-      "modelKey": "wan",
-      "videos": [
-        {
-          "id": "a1",
-          "videoUrl": "",
-          "description": "Anime blinking close-up",
-          "prompt": "A close-up anime-style portrait with soft blinking, shining eyes, pastel shading, and gentle character-like expression."
-        },
-        {
-          "id": "a2",
-          "videoUrl": "",
-          "description": "Wind blowing hair",
-          "prompt": "Anime-style hair gently blowing in the wind, soft lighting, smooth fluttering motion, and a calming dreamy atmosphere."
-        },
-        {
-          "id": "a3",
-          "videoUrl": "",
-          "description": "Sparkle eyes animation",
-          "prompt": "Cute anime-style eye sparkles glowing softly with delicate light reflections and gentle blinking."
-        },
-        {
-          "id": "a4",
-          "videoUrl": "",
-          "description": "Anime background parallax",
-          "prompt": "Anime-style parallax background moving subtly behind the character, pastel colors, and a soothing animated scene."
-        },
-        {
-          "id": "a5",
-          "videoUrl": "",
-          "description": "Soft pastel anime loop",
-          "prompt": "A soft pastel-colored anime portrait loop with gentle motion, warm lighting, and calm expressive visuals."
-        }
-      ]
-    },
-    {
       "id": "cyberpunk",
       "title": "Cyberpunk Neon",
       "modelKey": "wan",
