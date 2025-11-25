@@ -230,31 +230,31 @@
       "videos": [
         {
           "id": "w1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fwings%2FVidAI_6A13B149-644C-442D-B2D0-CC3FDCC82615.mp4?alt=media",
           "description": "Wings opening behind person",
           "prompt": "Soft angel wings opening gracefully behind the person, gentle glowing edges, and an ethereal atmospheric light source."
         },
         {
           "id": "w2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fwings%2FVidAI_F9797F9C-4980-4323-8141-091B5B920330.mp4?alt=media",
           "description": "Golden particle glow",
           "prompt": "Golden magical particles forming a radiant glowing halo around the person, soft shimmering movement, and a divine cinematic effect."
         },
         {
           "id": "w3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fwings%2FVidAI_F4C7B8E7-FCB1-421B-AD48-8D1BF9259F3D.mp4?alt=media",
           "description": "Celestial light rays",
           "prompt": "Heavenly light rays shining behind the subject, soft volumetric glow, and a celestial divine atmosphere."
         },
         {
           "id": "w4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fwings%2FVidAI_E933EC25-B899-4E8F-93E7-6DFFE1308392.mp4?alt=media",
           "description": "Soft magical aura",
           "prompt": "A soft magical aura pulsing gently around the person, subtle shimmering lights, and a dreamy enchanted feeling."
         },
         {
           "id": "w5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fwings%2FVidAI_20A1DD81-A3FA-4EF2-BC66-0915CAE29874.mp4?alt=media",
           "description": "White feathers floating",
           "prompt": "White angel feathers drifting slowly downward, soft air movement, and an uplifting heavenly visual mood."
         }
