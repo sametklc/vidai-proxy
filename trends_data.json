@@ -193,31 +193,31 @@
       "videos": [
         {
           "id": "m1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fmonochrome%2FVidAI_48116086-C7CA-4599-BA03-ED7A0749E0CC.mp4?alt=media",
           "description": "Noir blinking portrait",
           "prompt": "A noir-style black and white portrait with soft subtle blinking, dramatic shadows, high contrast lighting, and a classic film noir ambiance."
         },
         {
           "id": "m2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fmonochrome%2FVidAI_01FC757A-1B38-4A82-9FDE-08242D2AE4B7.mp4?alt=media",
           "description": "Grainy high-contrast shadow move",
           "prompt": "High-contrast monochrome portrait with grainy textures, dramatic shadow movement, and an intense vintage film look."
         },
         {
           "id": "m3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fmonochrome%2FVidAI_9549EB81-EAC0-4667-B7B4-5D9179BB547A.mp4?alt=media",
           "description": "Slow zoom vintage style",
           "prompt": "A slow cinematic zoom in a vintage monochrome style, soft gradients, and a nostalgic emotional tone."
         },
         {
           "id": "m4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fmonochrome%2FVidAI_06F84633-E0E5-4250-A755-DEBF6FAD8C8E.mp4?alt=media",
           "description": "Old film scratches",
           "prompt": "Old film-style scratch overlays drifting across the frame, subtle flickering, and realistic monochromatic film texture."
         },
         {
           "id": "m5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fmonochrome%2FVidAI_35952B3B-96BD-4519-A6D5-A68DFC102576.mp4?alt=media",
           "description": "Black & white emotional frame",
           "prompt": "A black-and-white emotional portrait with soft lighting, expressive facial detail, and a timeless classic cinematic mood."
         }
