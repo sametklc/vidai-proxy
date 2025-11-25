@@ -341,31 +341,31 @@
       "videos": [
         {
           "id": "t1",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ftrailer%2FVidAI_5B9A9714-B2AB-4BA8-8299-A037D9BAE7C0.mp4?alt=media",
           "description": "Slow dramatic zoom",
           "prompt": "A slow dramatic cinematic zoom with intense shading, deep contrast, and a strong emotional film-trailer atmosphere."
         },
         {
           "id": "t2",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ftrailer%2FVidAI_E5C3905D-B21E-449E-94A0-813FA3273124.mp4?alt=media",
           "description": "Dust particle cinematic",
           "prompt": "Floating dust particles illuminated by soft cinematic beams of light, creating a mysterious film-trailer ambience."
         },
         {
           "id": "t3",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ftrailer%2FVidAI_BF8680E2-813D-4EC7-A384-E02F7186CEA3.mp4?alt=media",
           "description": "Action trailer movement",
           "prompt": "High-energy action trailer movement with dynamic lighting, fast cinematic tension, and dramatic atmosphere."
         },
         {
           "id": "t4",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ftrailer%2FVidAI_EC5D57CF-535F-4762-8FBB-2E000D544019.mp4?alt=media",
           "description": "Dark noir film intro",
           "prompt": "A dark noir-inspired film opening with deep shadows, soft film grain, monochrome tones, and dramatic atmospheric lighting."
         },
         {
           "id": "t5",
-          "videoUrl": "",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ftrailer%2FVidAI_6C1FFE35-30C1-454B-8A8A-C59982079D4D.mp4?alt=media",
           "description": "Heroic spotlight look",
           "prompt": "Heroic dramatic lighting from above, strong directional shadows, cinematic tension, and a powerful film-trailer look."
         }
