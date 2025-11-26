@@ -182,16 +182,20 @@ function makeStatusUrl(id) {
 
 // Content Moderation using OpenAI Moderation API
 async function moderateContent(text) {
+  console.log(`[MODERATION] Starting moderation check for text: "${text.substring(0, 100)}..."`);
+  
   if (!OPENAI_API_KEY) {
     console.warn("[MODERATION] OpenAI API key not set, skipping moderation");
     return { flagged: false, categories: {} };
   }
 
   if (!text || typeof text !== "string" || text.trim().length === 0) {
+    console.log("[MODERATION] Empty text, skipping moderation");
     return { flagged: false, categories: {} };
   }
 
   try {
+    console.log(`[MODERATION] Calling OpenAI Moderation API...`);
     const response = await fetch("https://api.openai.com/v1/moderations", {
       method: "POST",
       headers: {
@@ -200,6 +204,8 @@ async function moderateContent(text) {
       },
       body: JSON.stringify({ input: text })
     });
+    
+    console.log(`[MODERATION] API Response Status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -209,11 +215,15 @@ async function moderateContent(text) {
     }
 
     const data = await response.json();
+    console.log(`[MODERATION] API Response Data:`, JSON.stringify(data, null, 2));
     const result = data.results?.[0];
 
     if (!result) {
+      console.warn("[MODERATION] No result in API response");
       return { flagged: false, categories: {} };
     }
+    
+    console.log(`[MODERATION] Result - Flagged: ${result.flagged}, Categories:`, result.categories);
 
     // Check for critical categories: sexual, sexual/minors, violence, violence/graphic, self-harm
     const criticalCategories = [
@@ -225,17 +235,35 @@ async function moderateContent(text) {
     ];
 
     const flaggedCategories = {};
-    let isFlagged = result.flagged;
+    let hasCriticalCategory = false;
 
-    if (result.flagged && result.categories) {
+    // Check if any critical category is flagged (even if overall flagged is false)
+    if (result.categories) {
       for (const category of criticalCategories) {
-        if (result.categories[category]) {
+        if (result.categories[category] === true) {
           flaggedCategories[category] = true;
+          hasCriticalCategory = true;
         }
       }
     }
 
-    console.log(`[MODERATION] Text: "${text.substring(0, 50)}..." - Flagged: ${isFlagged}, Categories:`, Object.keys(flaggedCategories));
+    // Also check category scores - if score is above threshold, flag it
+    if (result.category_scores) {
+      const scoreThreshold = 0.5; // Threshold for category scores
+      for (const category of criticalCategories) {
+        const score = result.category_scores[category];
+        if (score && score > scoreThreshold && !flaggedCategories[category]) {
+          flaggedCategories[category] = true;
+          hasCriticalCategory = true;
+        }
+      }
+    }
+
+    // Consider flagged if overall flagged OR has critical category
+    const isFlagged = result.flagged || hasCriticalCategory;
+
+    console.log(`[MODERATION] Text: "${text.substring(0, 50)}..." - Flagged: ${isFlagged}, Overall Flagged: ${result.flagged}, Critical Categories:`, Object.keys(flaggedCategories));
+    console.log(`[MODERATION] Category Scores:`, result.category_scores);
 
     return {
       flagged: isFlagged,
@@ -323,11 +351,31 @@ async function buildResultResponse(predId) {
   return body;
 }
 
+// Test Moderation Endpoint
+app.post("/test/moderation", async (req, res) => {
+  try {
+    const text = (req.body?.text || "").toString().trim();
+    if (!text) return res.status(400).json({ error: "text required" });
+    
+    console.log(`[TEST] Testing moderation for: "${text}"`);
+    const result = await moderateContent(text);
+    
+    return res.json({
+      text: text,
+      moderation: result,
+      openaiApiKeySet: !!OPENAI_API_KEY
+    });
+  } catch (e) {
+    return res.status(500).json({ error: String(e.message || e) });
+  }
+});
+
 // Health
 app.get("/", (_req, res) => {
   res.json({
     ok: true,
     base_public_url: BASE_PUBLIC_URL || null,
+    moderation_enabled: !!OPENAI_API_KEY,
     defaults: {
       vidai: MODEL_VIDAI_SLUG,
       veo3: MODEL_VEO3_SLUG,
@@ -351,7 +399,9 @@ app.post("/video/generate_text", async (req, res) => {
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
     // Content moderation check
+    console.log(`[TEXT-TO-VIDEO] Checking moderation for prompt: "${prompt.substring(0, 50)}..."`);
     const moderationResult = await moderateContent(prompt);
+    console.log(`[TEXT-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
     if (moderationResult.flagged) {
       const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
       const categoryNames = flaggedCategories.length > 0 
@@ -360,7 +410,7 @@ app.post("/video/generate_text", async (req, res) => {
       console.log(`[MODERATION] Blocked text-to-video request - Categories: ${categoryNames}`);
       return res.status(403).json({ 
         error: "Content policy violation",
-        message: "Your prompt contains content that violates our usage policy. Please revise your prompt.",
+        message: "Yasak içerikler üretmeye çalışıyorsunuz. Bu tür içeriklerin tekrarlanması durumunda hesabınız banlanacaktır.",
         flaggedCategories: flaggedCategories
       });
     }
@@ -411,7 +461,9 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     const prompt = (req.body?.prompt || "").toString();
     
     // Content moderation check
+    console.log(`[IMAGE-TO-VIDEO] Checking moderation for prompt: "${prompt.substring(0, 50)}..."`);
     const moderationResult = await moderateContent(prompt);
+    console.log(`[IMAGE-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
     if (moderationResult.flagged) {
       const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
       const categoryNames = flaggedCategories.length > 0 
@@ -420,7 +472,7 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       console.log(`[MODERATION] Blocked image-to-video request - Categories: ${categoryNames}`);
       return res.status(403).json({ 
         error: "Content policy violation",
-        message: "Your prompt contains content that violates our usage policy. Please revise your prompt.",
+        message: "Yasak içerikler üretmeye çalışıyorsunuz. Bu tür içeriklerin tekrarlanması durumunda hesabınız banlanacaktır.",
         flaggedCategories: flaggedCategories
       });
     }
