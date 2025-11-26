@@ -18,7 +18,11 @@ const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-if (!OPENAI_API_KEY) console.warn("WARNING: OPENAI_API_KEY missing - content moderation will be disabled");
+if (!OPENAI_API_KEY) {
+  console.error("FATAL: OPENAI_API_KEY missing - content moderation is REQUIRED");
+  // Don't allow server to start without moderation
+  process.exit(1);
+}
 
 const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
 
@@ -185,8 +189,8 @@ async function moderateContent(text) {
   console.log(`[MODERATION] Starting moderation check for text: "${text.substring(0, 100)}..."`);
   
   if (!OPENAI_API_KEY) {
-    console.warn("[MODERATION] OpenAI API key not set, skipping moderation");
-    return { flagged: false, categories: {} };
+    console.error("[MODERATION] FATAL: OpenAI API key not set!");
+    throw new Error("Moderation API key not configured");
   }
 
   if (!text || typeof text !== "string" || text.trim().length === 0) {
@@ -210,8 +214,8 @@ async function moderateContent(text) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[MODERATION] API error: ${response.status} - ${errorText}`);
-      // If moderation fails, allow the request (fail open)
-      return { flagged: false, categories: {} };
+      // Fail closed - if moderation fails, block the request
+      throw new Error(`Moderation API failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -248,13 +252,15 @@ async function moderateContent(text) {
     }
 
     // Also check category scores - if score is above threshold, flag it
+    // Lower threshold for more sensitive detection
     if (result.category_scores) {
-      const scoreThreshold = 0.5; // Threshold for category scores
+      const scoreThreshold = 0.3; // Lower threshold for stricter moderation
       for (const category of criticalCategories) {
         const score = result.category_scores[category];
         if (score && score > scoreThreshold && !flaggedCategories[category]) {
           flaggedCategories[category] = true;
           hasCriticalCategory = true;
+          console.log(`[MODERATION] Category ${category} flagged by score: ${score} (threshold: ${scoreThreshold})`);
         }
       }
     }
@@ -272,9 +278,10 @@ async function moderateContent(text) {
       categoryScores: result.category_scores || {}
     };
   } catch (error) {
-    console.error("[MODERATION] Error:", error.message);
-    // If moderation fails, allow the request (fail open)
-    return { flagged: false, categories: {} };
+    console.error("[MODERATION] FATAL Error:", error.message);
+    console.error("[MODERATION] Stack:", error.stack);
+    // Fail closed - if moderation fails, block the request for safety
+    throw new Error(`Moderation check failed: ${error.message}`);
   }
 }
 
@@ -400,8 +407,18 @@ app.post("/video/generate_text", async (req, res) => {
 
     // Content moderation check
     console.log(`[TEXT-TO-VIDEO] Checking moderation for prompt: "${prompt.substring(0, 50)}..."`);
-    const moderationResult = await moderateContent(prompt);
-    console.log(`[TEXT-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
+    let moderationResult;
+    try {
+      moderationResult = await moderateContent(prompt);
+      console.log(`[TEXT-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
+    } catch (modError) {
+      console.error(`[TEXT-TO-VIDEO] Moderation check failed:`, modError.message);
+      return res.status(500).json({ 
+        error: "Content moderation service unavailable",
+        message: "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin."
+      });
+    }
+    
     if (moderationResult.flagged) {
       const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
       const categoryNames = flaggedCategories.length > 0 
@@ -462,8 +479,18 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     
     // Content moderation check
     console.log(`[IMAGE-TO-VIDEO] Checking moderation for prompt: "${prompt.substring(0, 50)}..."`);
-    const moderationResult = await moderateContent(prompt);
-    console.log(`[IMAGE-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
+    let moderationResult;
+    try {
+      moderationResult = await moderateContent(prompt);
+      console.log(`[IMAGE-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
+    } catch (modError) {
+      console.error(`[IMAGE-TO-VIDEO] Moderation check failed:`, modError.message);
+      return res.status(500).json({ 
+        error: "Content moderation service unavailable",
+        message: "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin."
+      });
+    }
+    
     if (moderationResult.flagged) {
       const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
       const categoryNames = flaggedCategories.length > 0 
