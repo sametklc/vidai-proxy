@@ -17,6 +17,9 @@ const upload = multer();
 const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+if (!OPENAI_API_KEY) console.warn("WARNING: OPENAI_API_KEY missing - content moderation will be disabled");
+
 const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
 
 // Model ENV (slug + optional version)
@@ -177,6 +180,76 @@ function makeStatusUrl(id) {
   return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
 }
 
+// Content Moderation using OpenAI Moderation API
+async function moderateContent(text) {
+  if (!OPENAI_API_KEY) {
+    console.warn("[MODERATION] OpenAI API key not set, skipping moderation");
+    return { flagged: false, categories: {} };
+  }
+
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    return { flagged: false, categories: {} };
+  }
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/moderations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({ input: text })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[MODERATION] API error: ${response.status} - ${errorText}`);
+      // If moderation fails, allow the request (fail open)
+      return { flagged: false, categories: {} };
+    }
+
+    const data = await response.json();
+    const result = data.results?.[0];
+
+    if (!result) {
+      return { flagged: false, categories: {} };
+    }
+
+    // Check for critical categories: sexual, sexual/minors, violence, violence/graphic, self-harm
+    const criticalCategories = [
+      "sexual",
+      "sexual/minors",
+      "violence",
+      "violence/graphic",
+      "self-harm"
+    ];
+
+    const flaggedCategories = {};
+    let isFlagged = result.flagged;
+
+    if (result.flagged && result.categories) {
+      for (const category of criticalCategories) {
+        if (result.categories[category]) {
+          flaggedCategories[category] = true;
+        }
+      }
+    }
+
+    console.log(`[MODERATION] Text: "${text.substring(0, 50)}..." - Flagged: ${isFlagged}, Categories:`, Object.keys(flaggedCategories));
+
+    return {
+      flagged: isFlagged,
+      categories: result.categories || {},
+      flaggedCategories: flaggedCategories,
+      categoryScores: result.category_scores || {}
+    };
+  } catch (error) {
+    console.error("[MODERATION] Error:", error.message);
+    // If moderation fails, allow the request (fail open)
+    return { flagged: false, categories: {} };
+  }
+}
+
 function httpError(res, e) {
   const msg = String(e?.message || e);
   const detail = e?.response?.error || e?.response?.data || e?.stack;
@@ -277,6 +350,21 @@ app.post("/video/generate_text", async (req, res) => {
     const prompt = (b.prompt || "").toString().trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
+    // Content moderation check
+    const moderationResult = await moderateContent(prompt);
+    if (moderationResult.flagged) {
+      const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
+      const categoryNames = flaggedCategories.length > 0 
+        ? flaggedCategories.join(", ")
+        : "inappropriate content";
+      console.log(`[MODERATION] Blocked text-to-video request - Categories: ${categoryNames}`);
+      return res.status(403).json({ 
+        error: "Content policy violation",
+        message: "Your prompt contains content that violates our usage policy. Please revise your prompt.",
+        flaggedCategories: flaggedCategories
+      });
+    }
+
     const modelKey = (b.model || "vidai").toString();
     const model = resolveModel(modelKey);
     const defaults = getDefaultsForModel(modelKey);
@@ -321,6 +409,22 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "image file required (multipart field: image)" });
 
     const prompt = (req.body?.prompt || "").toString();
+    
+    // Content moderation check
+    const moderationResult = await moderateContent(prompt);
+    if (moderationResult.flagged) {
+      const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
+      const categoryNames = flaggedCategories.length > 0 
+        ? flaggedCategories.join(", ")
+        : "inappropriate content";
+      console.log(`[MODERATION] Blocked image-to-video request - Categories: ${categoryNames}`);
+      return res.status(403).json({ 
+        error: "Content policy violation",
+        message: "Your prompt contains content that violates our usage policy. Please revise your prompt.",
+        flaggedCategories: flaggedCategories
+      });
+    }
+    
     const modelKey = (req.body?.model || "vidai").toString();
     const model = resolveModel(modelKey);
     
