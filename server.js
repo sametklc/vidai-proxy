@@ -18,10 +18,9 @@ const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+// OpenAI moderation removed - SeeDance and WAN models have their own moderation
 if (!OPENAI_API_KEY) {
-  console.error("FATAL: OPENAI_API_KEY missing - content moderation is REQUIRED");
-  // Don't allow server to start without moderation
-  process.exit(1);
+  console.warn("WARNING: OPENAI_API_KEY not set - moderation disabled (models have their own moderation)");
 }
 
 const BASE_PUBLIC_URL = (process.env.BASE_PUBLIC_URL || "").replace(/\/+$/, "");
@@ -185,7 +184,7 @@ function makeStatusUrl(id) {
 }
 
 // Content Moderation using OpenAI Moderation API with retry mechanism
-async function moderateContent(text, retries = 5) {
+async function moderateContent(text, retries = 3) {
   console.log(`[MODERATION] Starting moderation check for text: "${text.substring(0, 100)}..."`);
   
   if (!OPENAI_API_KEY) {
@@ -205,9 +204,9 @@ async function moderateContent(text, retries = 5) {
       console.log(`[MODERATION] Attempt ${attempt}/${retries} - Calling OpenAI Moderation API...`);
       console.log(`[MODERATION] API Key present: ${!!OPENAI_API_KEY}, Key length: ${OPENAI_API_KEY?.length || 0}`);
       
-      // Create AbortController for timeout
+      // Create AbortController for timeout - reduced to 8 seconds for faster failure
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout (increased)
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout (reduced for faster response)
       
       const response = await fetch("https://api.openai.com/v1/moderations", {
         method: "POST",
@@ -554,45 +553,8 @@ app.post("/video/generate_text", async (req, res) => {
     const prompt = (b.prompt || "").toString().trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // Content moderation check
-    console.log(`[TEXT-TO-VIDEO] Checking moderation for prompt: "${prompt.substring(0, 50)}..."`);
-    let moderationResult;
-    try {
-      moderationResult = await moderateContent(prompt);
-      console.log(`[TEXT-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
-    } catch (modError) {
-      console.error(`[TEXT-TO-VIDEO] Moderation check failed after retries:`, modError.message);
-      console.error(`[TEXT-TO-VIDEO] Error details:`, modError);
-      
-      // Provide more specific error messages
-      let errorMessage = "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin.";
-      if (modError.message.includes("401") || modError.message.includes("unauthorized")) {
-        errorMessage = "Moderation servisi yapılandırma hatası. Lütfen daha sonra tekrar deneyin.";
-      } else if (modError.message.includes("429") || modError.message.includes("rate limit")) {
-        errorMessage = "Moderation servisi yoğun. Lütfen birkaç dakika sonra tekrar deneyin.";
-      } else if (modError.message.includes("timeout") || modError.message.includes("AbortError")) {
-        errorMessage = "Moderation servisi yanıt vermiyor. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.";
-      }
-      
-      return res.status(500).json({ 
-        error: "Content moderation service unavailable",
-        message: errorMessage,
-        retryable: true
-      });
-    }
-    
-    if (moderationResult.flagged) {
-      const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
-      const categoryNames = flaggedCategories.length > 0 
-        ? flaggedCategories.join(", ")
-        : "inappropriate content";
-      console.log(`[MODERATION] Blocked text-to-video request - Categories: ${categoryNames}`);
-      return res.status(403).json({ 
-        error: "Content policy violation",
-        message: "Yasak içerikler üretmeye çalışıyorsunuz. Bu tür içeriklerin tekrarlanması durumunda hesabınız banlanacaktır.",
-        flaggedCategories: flaggedCategories
-      });
-    }
+    // Content moderation removed - SeeDance and WAN models have their own moderation
+    console.log(`[TEXT-TO-VIDEO] Processing request for prompt: "${prompt.substring(0, 50)}..."`);
 
     const modelKey = (b.model || "vidai").toString();
     const model = resolveModel(modelKey);
@@ -639,45 +601,8 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     const prompt = (req.body?.prompt || "").toString();
     
-    // Content moderation check
-    console.log(`[IMAGE-TO-VIDEO] Checking moderation for prompt: "${prompt.substring(0, 50)}..."`);
-    let moderationResult;
-    try {
-      moderationResult = await moderateContent(prompt);
-      console.log(`[IMAGE-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
-    } catch (modError) {
-      console.error(`[IMAGE-TO-VIDEO] Moderation check failed after retries:`, modError.message);
-      console.error(`[IMAGE-TO-VIDEO] Error details:`, modError);
-      
-      // Provide more specific error messages
-      let errorMessage = "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin.";
-      if (modError.message.includes("401") || modError.message.includes("unauthorized")) {
-        errorMessage = "Moderation servisi yapılandırma hatası. Lütfen daha sonra tekrar deneyin.";
-      } else if (modError.message.includes("429") || modError.message.includes("rate limit")) {
-        errorMessage = "Moderation servisi yoğun. Lütfen birkaç dakika sonra tekrar deneyin.";
-      } else if (modError.message.includes("timeout") || modError.message.includes("AbortError")) {
-        errorMessage = "Moderation servisi yanıt vermiyor. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.";
-      }
-      
-      return res.status(500).json({ 
-        error: "Content moderation service unavailable",
-        message: errorMessage,
-        retryable: true
-      });
-    }
-    
-    if (moderationResult.flagged) {
-      const flaggedCategories = Object.keys(moderationResult.flaggedCategories || {});
-      const categoryNames = flaggedCategories.length > 0 
-        ? flaggedCategories.join(", ")
-        : "inappropriate content";
-      console.log(`[MODERATION] Blocked image-to-video request - Categories: ${categoryNames}`);
-      return res.status(403).json({ 
-        error: "Content policy violation",
-        message: "Yasak içerikler üretmeye çalışıyorsunuz. Bu tür içeriklerin tekrarlanması durumunda hesabınız banlanacaktır.",
-        flaggedCategories: flaggedCategories
-      });
-    }
+    // Content moderation removed - SeeDance and WAN models have their own moderation
+    console.log(`[IMAGE-TO-VIDEO] Processing request for prompt: "${prompt.substring(0, 50)}..."`);
     
     const modelKey = (req.body?.model || "vidai").toString();
     const model = resolveModel(modelKey);
