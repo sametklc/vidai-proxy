@@ -184,8 +184,8 @@ function makeStatusUrl(id) {
   return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
 }
 
-// Content Moderation using OpenAI Moderation API
-async function moderateContent(text) {
+// Content Moderation using OpenAI Moderation API with retry mechanism
+async function moderateContent(text, retries = 3) {
   console.log(`[MODERATION] Starting moderation check for text: "${text.substring(0, 100)}..."`);
   
   if (!OPENAI_API_KEY) {
@@ -198,91 +198,145 @@ async function moderateContent(text) {
     return { flagged: false, categories: {} };
   }
 
-  try {
-    console.log(`[MODERATION] Calling OpenAI Moderation API...`);
-    const response = await fetch("https://api.openai.com/v1/moderations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({ input: text })
-    });
-    
-    console.log(`[MODERATION] API Response Status: ${response.status}`);
+  let lastError = null;
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`[MODERATION] Attempt ${attempt}/${retries} - Calling OpenAI Moderation API...`);
+      
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch("https://api.openai.com/v1/moderations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({ input: text }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      console.log(`[MODERATION] API Response Status: ${response.status}`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[MODERATION] API error: ${response.status} - ${errorText}`);
-      // Fail closed - if moderation fails, block the request
-      throw new Error(`Moderation API failed: ${response.status} - ${errorText}`);
-    }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[MODERATION] API error: ${response.status} - ${errorText}`);
+        
+        // If it's a 401 (unauthorized) or 429 (rate limit), don't retry
+        if (response.status === 401 || response.status === 429) {
+          throw new Error(`Moderation API error: ${response.status} - ${errorText}`);
+        }
+        
+        // For other errors, retry
+        lastError = new Error(`Moderation API failed: ${response.status} - ${errorText}`);
+        if (attempt < retries) {
+          const delay = Math.min(1000 * attempt, 3000); // Exponential backoff, max 3 seconds
+          console.log(`[MODERATION] Retrying in ${delay}ms...`);
+          await sleep(delay);
+          continue;
+        }
+        throw lastError;
+      }
 
-    const data = await response.json();
-    console.log(`[MODERATION] API Response Data:`, JSON.stringify(data, null, 2));
-    const result = data.results?.[0];
+      const data = await response.json();
+      console.log(`[MODERATION] API Response Data:`, JSON.stringify(data, null, 2));
+      const result = data.results?.[0];
 
-    if (!result) {
-      console.warn("[MODERATION] No result in API response");
-      return { flagged: false, categories: {} };
-    }
-    
-    console.log(`[MODERATION] Result - Flagged: ${result.flagged}, Categories:`, result.categories);
+      if (!result) {
+        console.warn("[MODERATION] No result in API response");
+        return { flagged: false, categories: {} };
+      }
+      
+      console.log(`[MODERATION] Result - Flagged: ${result.flagged}, Categories:`, result.categories);
 
-    // Check for critical categories: sexual, sexual/minors, violence, violence/graphic, self-harm
-    const criticalCategories = [
-      "sexual",
-      "sexual/minors",
-      "violence",
-      "violence/graphic",
-      "self-harm"
-    ];
+      // Check for critical categories: sexual, sexual/minors, violence, violence/graphic, self-harm
+      const criticalCategories = [
+        "sexual",
+        "sexual/minors",
+        "violence",
+        "violence/graphic",
+        "self-harm"
+      ];
 
-    const flaggedCategories = {};
-    let hasCriticalCategory = false;
+      const flaggedCategories = {};
+      let hasCriticalCategory = false;
 
-    // Check if any critical category is flagged (even if overall flagged is false)
-    if (result.categories) {
-      for (const category of criticalCategories) {
-        if (result.categories[category] === true) {
-          flaggedCategories[category] = true;
-          hasCriticalCategory = true;
+      // Check if any critical category is flagged (even if overall flagged is false)
+      if (result.categories) {
+        for (const category of criticalCategories) {
+          if (result.categories[category] === true) {
+            flaggedCategories[category] = true;
+            hasCriticalCategory = true;
+          }
         }
       }
-    }
 
-    // Also check category scores - if score is above threshold, flag it
-    // Lower threshold for more sensitive detection
-    if (result.category_scores) {
-      const scoreThreshold = 0.3; // Lower threshold for stricter moderation
-      for (const category of criticalCategories) {
-        const score = result.category_scores[category];
-        if (score && score > scoreThreshold && !flaggedCategories[category]) {
-          flaggedCategories[category] = true;
-          hasCriticalCategory = true;
-          console.log(`[MODERATION] Category ${category} flagged by score: ${score} (threshold: ${scoreThreshold})`);
+      // Also check category scores - if score is above threshold, flag it
+      // Lower threshold for more sensitive detection
+      if (result.category_scores) {
+        const scoreThreshold = 0.3; // Lower threshold for stricter moderation
+        for (const category of criticalCategories) {
+          const score = result.category_scores[category];
+          if (score && score > scoreThreshold && !flaggedCategories[category]) {
+            flaggedCategories[category] = true;
+            hasCriticalCategory = true;
+            console.log(`[MODERATION] Category ${category} flagged by score: ${score} (threshold: ${scoreThreshold})`);
+          }
         }
       }
+
+      // Consider flagged if overall flagged OR has critical category
+      const isFlagged = result.flagged || hasCriticalCategory;
+
+      console.log(`[MODERATION] Text: "${text.substring(0, 50)}..." - Flagged: ${isFlagged}, Overall Flagged: ${result.flagged}, Critical Categories:`, Object.keys(flaggedCategories));
+      console.log(`[MODERATION] Category Scores:`, result.category_scores);
+
+      return {
+        flagged: isFlagged,
+        categories: result.categories || {},
+        flaggedCategories: flaggedCategories,
+        categoryScores: result.category_scores || {}
+      };
+    } catch (error) {
+      lastError = error;
+      console.error(`[MODERATION] Attempt ${attempt}/${retries} failed:`, error.message);
+      
+      // If it's an abort (timeout), retry
+      if (error.name === 'AbortError') {
+        console.log(`[MODERATION] Request timeout, will retry...`);
+        if (attempt < retries) {
+          const delay = Math.min(1000 * attempt, 3000);
+          console.log(`[MODERATION] Retrying in ${delay}ms...`);
+          await sleep(delay);
+          continue;
+        }
+      }
+      
+      // If it's a network error, retry
+      if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('ECONNREFUSED') || error.message.includes('ETIMEDOUT')) {
+        if (attempt < retries) {
+          const delay = Math.min(1000 * attempt, 3000);
+          console.log(`[MODERATION] Network error, retrying in ${delay}ms...`);
+          await sleep(delay);
+          continue;
+        }
+      }
+      
+      // If all retries failed, throw the error
+      if (attempt === retries) {
+        console.error("[MODERATION] All retry attempts failed");
+        console.error("[MODERATION] Last error:", error.message);
+        console.error("[MODERATION] Stack:", error.stack);
+        throw new Error(`Moderation check failed after ${retries} attempts: ${error.message}`);
+      }
     }
-
-    // Consider flagged if overall flagged OR has critical category
-    const isFlagged = result.flagged || hasCriticalCategory;
-
-    console.log(`[MODERATION] Text: "${text.substring(0, 50)}..." - Flagged: ${isFlagged}, Overall Flagged: ${result.flagged}, Critical Categories:`, Object.keys(flaggedCategories));
-    console.log(`[MODERATION] Category Scores:`, result.category_scores);
-
-    return {
-      flagged: isFlagged,
-      categories: result.categories || {},
-      flaggedCategories: flaggedCategories,
-      categoryScores: result.category_scores || {}
-    };
-  } catch (error) {
-    console.error("[MODERATION] FATAL Error:", error.message);
-    console.error("[MODERATION] Stack:", error.stack);
-    // Fail closed - if moderation fails, block the request for safety
-    throw new Error(`Moderation check failed: ${error.message}`);
   }
+  
+  // Should never reach here, but just in case
+  throw lastError || new Error("Moderation check failed: Unknown error");
 }
 
 function httpError(res, e) {
@@ -412,10 +466,23 @@ app.post("/video/generate_text", async (req, res) => {
       moderationResult = await moderateContent(prompt);
       console.log(`[TEXT-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
     } catch (modError) {
-      console.error(`[TEXT-TO-VIDEO] Moderation check failed:`, modError.message);
+      console.error(`[TEXT-TO-VIDEO] Moderation check failed after retries:`, modError.message);
+      console.error(`[TEXT-TO-VIDEO] Error details:`, modError);
+      
+      // Provide more specific error messages
+      let errorMessage = "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin.";
+      if (modError.message.includes("401") || modError.message.includes("unauthorized")) {
+        errorMessage = "Moderation servisi yapılandırma hatası. Lütfen daha sonra tekrar deneyin.";
+      } else if (modError.message.includes("429") || modError.message.includes("rate limit")) {
+        errorMessage = "Moderation servisi yoğun. Lütfen birkaç dakika sonra tekrar deneyin.";
+      } else if (modError.message.includes("timeout") || modError.message.includes("AbortError")) {
+        errorMessage = "Moderation servisi yanıt vermiyor. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.";
+      }
+      
       return res.status(500).json({ 
         error: "Content moderation service unavailable",
-        message: "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin."
+        message: errorMessage,
+        retryable: true
       });
     }
     
@@ -484,10 +551,23 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       moderationResult = await moderateContent(prompt);
       console.log(`[IMAGE-TO-VIDEO] Moderation result:`, JSON.stringify(moderationResult, null, 2));
     } catch (modError) {
-      console.error(`[IMAGE-TO-VIDEO] Moderation check failed:`, modError.message);
+      console.error(`[IMAGE-TO-VIDEO] Moderation check failed after retries:`, modError.message);
+      console.error(`[IMAGE-TO-VIDEO] Error details:`, modError);
+      
+      // Provide more specific error messages
+      let errorMessage = "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin.";
+      if (modError.message.includes("401") || modError.message.includes("unauthorized")) {
+        errorMessage = "Moderation servisi yapılandırma hatası. Lütfen daha sonra tekrar deneyin.";
+      } else if (modError.message.includes("429") || modError.message.includes("rate limit")) {
+        errorMessage = "Moderation servisi yoğun. Lütfen birkaç dakika sonra tekrar deneyin.";
+      } else if (modError.message.includes("timeout") || modError.message.includes("AbortError")) {
+        errorMessage = "Moderation servisi yanıt vermiyor. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.";
+      }
+      
       return res.status(500).json({ 
         error: "Content moderation service unavailable",
-        message: "Yasak içerik kontrolü yapılamadı. Lütfen daha sonra tekrar deneyin."
+        message: errorMessage,
+        retryable: true
       });
     }
     
