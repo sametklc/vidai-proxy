@@ -185,7 +185,7 @@ function makeStatusUrl(id) {
 }
 
 // Content Moderation using OpenAI Moderation API with retry mechanism
-async function moderateContent(text, retries = 3) {
+async function moderateContent(text, retries = 5) {
   console.log(`[MODERATION] Starting moderation check for text: "${text.substring(0, 100)}..."`);
   
   if (!OPENAI_API_KEY) {
@@ -203,10 +203,11 @@ async function moderateContent(text, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`[MODERATION] Attempt ${attempt}/${retries} - Calling OpenAI Moderation API...`);
+      console.log(`[MODERATION] API Key present: ${!!OPENAI_API_KEY}, Key length: ${OPENAI_API_KEY?.length || 0}`);
       
       // Create AbortController for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout (increased)
       
       const response = await fetch("https://api.openai.com/v1/moderations", {
         method: "POST",
@@ -225,15 +226,27 @@ async function moderateContent(text, retries = 3) {
         const errorText = await response.text();
         console.error(`[MODERATION] API error: ${response.status} - ${errorText}`);
         
-        // If it's a 401 (unauthorized) or 429 (rate limit), don't retry
-        if (response.status === 401 || response.status === 429) {
-          throw new Error(`Moderation API error: ${response.status} - ${errorText}`);
+        // If it's a 401 (unauthorized), don't retry - API key is wrong
+        if (response.status === 401) {
+          console.error(`[MODERATION] FATAL: Invalid API key (401 Unauthorized)`);
+          throw new Error(`Moderation API error: Invalid API key (401) - ${errorText}`);
+        }
+        
+        // If it's a 429 (rate limit), retry with longer delay
+        if (response.status === 429) {
+          if (attempt < retries) {
+            const delay = Math.min(5000 * attempt, 10000); // Longer delay for rate limit
+            console.log(`[MODERATION] Rate limited, retrying in ${delay}ms...`);
+            await sleep(delay);
+            continue;
+          }
+          throw new Error(`Moderation API rate limited: ${errorText}`);
         }
         
         // For other errors, retry
         lastError = new Error(`Moderation API failed: ${response.status} - ${errorText}`);
         if (attempt < retries) {
-          const delay = Math.min(1000 * attempt, 3000); // Exponential backoff, max 3 seconds
+          const delay = Math.min(2000 * attempt, 5000); // Exponential backoff, max 5 seconds
           console.log(`[MODERATION] Retrying in ${delay}ms...`);
           await sleep(delay);
           continue;
@@ -303,33 +316,45 @@ async function moderateContent(text, retries = 3) {
     } catch (error) {
       lastError = error;
       console.error(`[MODERATION] Attempt ${attempt}/${retries} failed:`, error.message);
+      console.error(`[MODERATION] Error type: ${error.name}, Error code: ${error.code}`);
       
       // If it's an abort (timeout), retry
-      if (error.name === 'AbortError') {
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
         console.log(`[MODERATION] Request timeout, will retry...`);
         if (attempt < retries) {
-          const delay = Math.min(1000 * attempt, 3000);
-          console.log(`[MODERATION] Retrying in ${delay}ms...`);
+          const delay = Math.min(2000 * attempt, 5000);
+          console.log(`[MODERATION] Retrying after timeout in ${delay}ms...`);
           await sleep(delay);
           continue;
         }
       }
       
       // If it's a network error, retry
-      if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('ECONNREFUSED') || error.message.includes('ETIMEDOUT')) {
+      if (error.message.includes('fetch') || 
+          error.message.includes('network') || 
+          error.message.includes('ECONNREFUSED') || 
+          error.message.includes('ETIMEDOUT') ||
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('ECONNRESET')) {
         if (attempt < retries) {
-          const delay = Math.min(1000 * attempt, 3000);
+          const delay = Math.min(2000 * attempt, 5000);
           console.log(`[MODERATION] Network error, retrying in ${delay}ms...`);
           await sleep(delay);
           continue;
         }
       }
       
+      // If it's a 401 (unauthorized), don't retry - API key is definitely wrong
+      if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        console.error(`[MODERATION] FATAL: Invalid API key - stopping retries`);
+        throw new Error(`Moderation API key is invalid or expired: ${error.message}`);
+      }
+      
       // If all retries failed, throw the error
       if (attempt === retries) {
         console.error("[MODERATION] All retry attempts failed");
         console.error("[MODERATION] Last error:", error.message);
-        console.error("[MODERATION] Stack:", error.stack);
+        console.error("[MODERATION] Error stack:", error.stack);
         throw new Error(`Moderation check failed after ${retries} attempts: ${error.message}`);
       }
     }
@@ -437,6 +462,8 @@ app.get("/", (_req, res) => {
     ok: true,
     base_public_url: BASE_PUBLIC_URL || null,
     moderation_enabled: !!OPENAI_API_KEY,
+    moderation_key_present: !!OPENAI_API_KEY,
+    moderation_key_length: OPENAI_API_KEY?.length || 0,
     defaults: {
       vidai: MODEL_VIDAI_SLUG,
       veo3: MODEL_VEO3_SLUG,
@@ -450,6 +477,74 @@ app.get("/", (_req, res) => {
       runway: MODEL_RUNWAY_SLUG || "(not set)"
     }
   });
+});
+
+// Moderation Health Check
+app.get("/health/moderation", async (_req, res) => {
+  try {
+    if (!OPENAI_API_KEY) {
+      return res.status(500).json({
+        ok: false,
+        error: "OPENAI_API_KEY not set",
+        message: "Moderation API key is not configured"
+      });
+    }
+    
+    // Test moderation API with a simple text
+    const testText = "This is a test";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    try {
+      const response = await fetch("https://api.openai.com/v1/moderations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({ input: testText }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const data = await response.json();
+        return res.json({
+          ok: true,
+          message: "Moderation API is working",
+          api_key_present: true,
+          api_key_length: OPENAI_API_KEY.length,
+          test_response: data
+        });
+      } else {
+        const errorText = await response.text();
+        return res.status(response.status).json({
+          ok: false,
+          error: `Moderation API returned ${response.status}`,
+          message: errorText,
+          api_key_present: true,
+          api_key_length: OPENAI_API_KEY.length
+        });
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      return res.status(500).json({
+        ok: false,
+        error: error.message,
+        error_type: error.name,
+        message: "Failed to connect to Moderation API",
+        api_key_present: true,
+        api_key_length: OPENAI_API_KEY.length
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: error.message,
+      message: "Health check failed"
+    });
+  }
 });
 
 // Text → Video
