@@ -18,7 +18,6 @@ const REPLICATE_API_TOKEN = process.env.REPLICATE_API_TOKEN;
 if (!REPLICATE_API_TOKEN) console.error("FATAL: REPLICATE_API_TOKEN missing");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-// OpenAI moderation removed - SeeDance and WAN models have their own moderation
 if (!OPENAI_API_KEY) {
   console.warn("WARNING: OPENAI_API_KEY not set - moderation disabled (models have their own moderation)");
 }
@@ -39,13 +38,13 @@ const MODEL_SORA2_SLUG   = process.env.MODEL_SORA2_SLUG   || "lucataco/animate-d
 const MODEL_SORA2_VER    = process.env.MODEL_SORA2_VER    || null;
 
 // New models
-const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "kwaivgi/kling-v2.1"; // Kling model
+const MODEL_SVD_SLUG      = process.env.MODEL_SVD_SLUG      || "kwaivgi/kling-v2.1";
 const MODEL_SVD_VER       = process.env.MODEL_SVD_VER       || null;
 
-const MODEL_COGX_SLUG     = process.env.MODEL_COGX_SLUG     || "THUDM/cogvideox"; // Try alternative slug
+const MODEL_COGX_SLUG     = process.env.MODEL_COGX_SLUG     || "THUDM/cogvideox";
 const MODEL_COGX_VER      = process.env.MODEL_COGX_VER      || null;
 
-const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "guoyww/animatediff-motion-lora-zoom-out"; // Try alternative slug
+const MODEL_ANIMATEDIFF_SLUG = process.env.MODEL_ANIMATEDIFF_SLUG || "guoyww/animatediff-motion-lora-zoom-out";
 const MODEL_ANIMATEDIFF_VER  = process.env.MODEL_ANIMATEDIFF_VER  || null;
 
 const MODEL_LUMA_SLUG     = process.env.MODEL_LUMA_SLUG     || "lumaai/luma-dream-machine";
@@ -67,13 +66,13 @@ const MODEL_DEFAULTS = {
   },
   wan: {
     duration: 5,
-    resolution: "480p", // Changed to 480p for bundle videos
+    resolution: "480p",
     aspect_ratio: "16:9",
     watermark: false
   },
   veo3: {
     duration: 4,
-    resolution: "720p", // Veo3 only supports 720p
+    resolution: "720p",
     aspect_ratio: "16:9",
     watermark: false
   },
@@ -84,8 +83,8 @@ const MODEL_DEFAULTS = {
     watermark: false
   },
   svd: {
-    duration: 5, // Kling only supports 5 or 10 seconds - using 5 for lower cost
-    resolution: "480p", // Reduced resolution to lower cost
+    duration: 5,
+    resolution: "480p",
     aspect_ratio: "16:9",
     watermark: false
   },
@@ -140,7 +139,6 @@ function mapStatus(s) {
 function urlFromAny(x) {
   if (!x) return null;
   
-  // Handle string URLs
   if (typeof x === "string") {
     const trimmed = x.trim();
     if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
@@ -149,7 +147,6 @@ function urlFromAny(x) {
     return null;
   }
 
-  // Handle objects with url() method
   try {
     if (x && typeof x.url === "function") {
       const u = x.url();
@@ -164,7 +161,6 @@ function urlFromAny(x) {
     // Ignore errors
   }
 
-  // Handle arrays
   if (Array.isArray(x)) {
     for (const it of x) {
       const u = urlFromAny(it);
@@ -173,9 +169,7 @@ function urlFromAny(x) {
     return null;
   }
 
-  // Handle objects
   if (typeof x === "object" && x !== null) {
-    // Direct keys to check
     const direct = ["video_url", "video", "url", "mp4", "file", "output_url", "result_url", "media_url", "output"];
     for (const k of direct) {
       const v = x[k];
@@ -187,7 +181,6 @@ function urlFromAny(x) {
       }
     }
     
-    // Check nested urls object
     if (x.urls) {
       if (typeof x.urls.get === "string") {
         const trimmed = x.urls.get.trim();
@@ -195,20 +188,17 @@ function urlFromAny(x) {
           return trimmed;
         }
       }
-      // Recursively check urls object
       const u = urlFromAny(x.urls);
       if (u) return u;
     }
     
-    // Recursively check output
     if (x.output) {
       const u = urlFromAny(x.output);
       if (u) return u;
     }
 
-    // Recursively check all keys
     for (const k of Object.keys(x)) {
-      if (k !== "output" && k !== "urls") { // Already checked
+      if (k !== "output" && k !== "urls") {
         const u = urlFromAny(x[k]);
         if (u) return u;
       }
@@ -225,7 +215,6 @@ function makeStatusUrl(id) {
   return BASE_PUBLIC_URL ? `${BASE_PUBLIC_URL}${path}` : path;
 }
 
-// Content Moderation using OpenAI Moderation API with retry mechanism
 async function moderateContent(text, retries = 3) {
   console.log(`[MODERATION] Starting moderation check for text: "${text.substring(0, 100)}..."`);
   
@@ -244,11 +233,9 @@ async function moderateContent(text, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`[MODERATION] Attempt ${attempt}/${retries} - Calling OpenAI Moderation API...`);
-      console.log(`[MODERATION] API Key present: ${!!OPENAI_API_KEY}, Key length: ${OPENAI_API_KEY?.length || 0}`);
       
-      // Create AbortController for timeout - reduced to 8 seconds for faster failure
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout (reduced for faster response)
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       
       const response = await fetch("https://api.openai.com/v1/moderations", {
         method: "POST",
@@ -267,16 +254,14 @@ async function moderateContent(text, retries = 3) {
         const errorText = await response.text();
         console.error(`[MODERATION] API error: ${response.status} - ${errorText}`);
         
-        // If it's a 401 (unauthorized), don't retry - API key is wrong
         if (response.status === 401) {
           console.error(`[MODERATION] FATAL: Invalid API key (401 Unauthorized)`);
           throw new Error(`Moderation API error: Invalid API key (401) - ${errorText}`);
         }
         
-        // If it's a 429 (rate limit), retry with longer delay
         if (response.status === 429) {
           if (attempt < retries) {
-            const delay = Math.min(5000 * attempt, 10000); // Longer delay for rate limit
+            const delay = Math.min(5000 * attempt, 10000);
             console.log(`[MODERATION] Rate limited, retrying in ${delay}ms...`);
             await sleep(delay);
             continue;
@@ -284,10 +269,9 @@ async function moderateContent(text, retries = 3) {
           throw new Error(`Moderation API rate limited: ${errorText}`);
         }
         
-        // For other errors, retry
         lastError = new Error(`Moderation API failed: ${response.status} - ${errorText}`);
         if (attempt < retries) {
-          const delay = Math.min(2000 * attempt, 5000); // Exponential backoff, max 5 seconds
+          const delay = Math.min(2000 * attempt, 5000);
           console.log(`[MODERATION] Retrying in ${delay}ms...`);
           await sleep(delay);
           continue;
@@ -296,7 +280,6 @@ async function moderateContent(text, retries = 3) {
       }
 
       const data = await response.json();
-      console.log(`[MODERATION] API Response Data:`, JSON.stringify(data, null, 2));
       const result = data.results?.[0];
 
       if (!result) {
@@ -306,7 +289,6 @@ async function moderateContent(text, retries = 3) {
       
       console.log(`[MODERATION] Result - Flagged: ${result.flagged}, Categories:`, result.categories);
 
-      // Check for critical categories: sexual, sexual/minors, violence, violence/graphic, self-harm
       const criticalCategories = [
         "sexual",
         "sexual/minors",
@@ -318,7 +300,6 @@ async function moderateContent(text, retries = 3) {
       const flaggedCategories = {};
       let hasCriticalCategory = false;
 
-      // Check if any critical category is flagged (even if overall flagged is false)
       if (result.categories) {
         for (const category of criticalCategories) {
           if (result.categories[category] === true) {
@@ -328,10 +309,8 @@ async function moderateContent(text, retries = 3) {
         }
       }
 
-      // Also check category scores - if score is above threshold, flag it
-      // Lower threshold for more sensitive detection
       if (result.category_scores) {
-        const scoreThreshold = 0.3; // Lower threshold for stricter moderation
+        const scoreThreshold = 0.3;
         for (const category of criticalCategories) {
           const score = result.category_scores[category];
           if (score && score > scoreThreshold && !flaggedCategories[category]) {
@@ -342,11 +321,9 @@ async function moderateContent(text, retries = 3) {
         }
       }
 
-      // Consider flagged if overall flagged OR has critical category
       const isFlagged = result.flagged || hasCriticalCategory;
 
       console.log(`[MODERATION] Text: "${text.substring(0, 50)}..." - Flagged: ${isFlagged}, Overall Flagged: ${result.flagged}, Critical Categories:`, Object.keys(flaggedCategories));
-      console.log(`[MODERATION] Category Scores:`, result.category_scores);
 
       return {
         flagged: isFlagged,
@@ -357,9 +334,7 @@ async function moderateContent(text, retries = 3) {
     } catch (error) {
       lastError = error;
       console.error(`[MODERATION] Attempt ${attempt}/${retries} failed:`, error.message);
-      console.error(`[MODERATION] Error type: ${error.name}, Error code: ${error.code}`);
       
-      // If it's an abort (timeout), retry
       if (error.name === 'AbortError' || error.message.includes('timeout')) {
         console.log(`[MODERATION] Request timeout, will retry...`);
         if (attempt < retries) {
@@ -370,7 +345,6 @@ async function moderateContent(text, retries = 3) {
         }
       }
       
-      // If it's a network error, retry
       if (error.message.includes('fetch') || 
           error.message.includes('network') || 
           error.message.includes('ECONNREFUSED') || 
@@ -385,23 +359,19 @@ async function moderateContent(text, retries = 3) {
         }
       }
       
-      // If it's a 401 (unauthorized), don't retry - API key is definitely wrong
       if (error.message.includes('401') || error.message.includes('unauthorized')) {
         console.error(`[MODERATION] FATAL: Invalid API key - stopping retries`);
         throw new Error(`Moderation API key is invalid or expired: ${error.message}`);
       }
       
-      // If all retries failed, throw the error
       if (attempt === retries) {
         console.error("[MODERATION] All retry attempts failed");
         console.error("[MODERATION] Last error:", error.message);
-        console.error("[MODERATION] Error stack:", error.stack);
         throw new Error(`Moderation check failed after ${retries} attempts: ${error.message}`);
       }
     }
   }
   
-  // Should never reach here, but just in case
   throw lastError || new Error("Moderation check failed: Unknown error");
 }
 
@@ -568,7 +538,6 @@ app.get("/health/moderation", async (_req, res) => {
       });
     }
     
-    // Test moderation API with a simple text
     const testText = "This is a test";
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -632,20 +601,17 @@ app.post("/video/generate_text", async (req, res) => {
     const prompt = (b.prompt || "").toString().trim();
     if (!prompt) return res.status(400).json({ error: "prompt required" });
 
-    // Content moderation removed - SeeDance and WAN models have their own moderation
     console.log(`[TEXT-TO-VIDEO] Processing request for prompt: "${prompt.substring(0, 50)}..."`);
 
     const modelKey = (b.model || "vidai").toString();
     const model = resolveModel(modelKey);
     const defaults = getDefaultsForModel(modelKey);
 
-    // Use provided values or fall back to model-specific defaults
     const duration = Number.isFinite(+b.duration) ? +b.duration : defaults.duration;
     let resolution = b.resolution || defaults.resolution;
     const aspect_ratio = b.aspect_ratio || defaults.aspect_ratio;
     const watermark = typeof b.watermark === "boolean" ? b.watermark : defaults.watermark;
 
-    // Veo3 only supports 720p - force it
     if (modelKey.toLowerCase() === "veo3") {
       resolution = "720p";
     }
@@ -657,9 +623,8 @@ app.post("/video/generate_text", async (req, res) => {
       aspect_ratio,
       watermark
     };
-    if (model.needsFps24) input.fps = 24; // SeeDance gibi
+    if (model.needsFps24) input.fps = 24;
     
-    // Veo3 audio support
     if (modelKey.toLowerCase() === "veo3") {
       const hasAudio = b.has_audio === true || b.has_audio === "true";
       if (hasAudio) {
@@ -693,20 +658,17 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     const prompt = (req.body?.prompt || "").toString();
     
-    // Content moderation removed - SeeDance and WAN models have their own moderation
     console.log(`[IMAGE-TO-VIDEO] Processing request for prompt: "${prompt.substring(0, 50)}..."`);
     
     const modelKey = (req.body?.model || "vidai").toString();
     const model = resolveModel(modelKey);
     
-    // Check if model supports image-to-video
     if (!model.supportsImage) {
       return res.status(400).json({ error: `Model ${modelKey} does not support image-to-video. Please use text-to-video endpoint.` });
     }
     
     const defaults = getDefaultsForModel(modelKey);
 
-    // Use provided values or fall back to model-specific defaults
     const duration = Number.isFinite(+req.body?.duration) ? +req.body.duration : defaults.duration;
     let resolution = req.body?.resolution || defaults.resolution;
     const aspect_ratio = req.body?.aspect_ratio || defaults.aspect_ratio;
@@ -714,19 +676,15 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       ? req.body.watermark === "true"
       : (typeof req.body?.watermark === "boolean" ? req.body.watermark : defaults.watermark);
     
-    // Convert modelKey to lowercase for comparisons
     const modelKeyLower = modelKey.toLowerCase();
     
-    // Veo3 only supports 720p - force it
     if (modelKeyLower === "veo3") {
       resolution = "720p";
     }
 
-    // Model-specific input formatting
     let input = {};
     
     if (modelKeyLower === "runway") {
-      // Runway Gen4 Turbo
       input = {
         image: req.file.buffer,
         prompt: prompt || ""
@@ -734,17 +692,14 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       if (duration) input.duration = duration;
       if (resolution) input.resolution = resolution;
     } else if (modelKeyLower === "svd") {
-      // Kling model uses start_image instead of image
       input = {
         start_image: req.file.buffer,
         prompt: prompt || ""
       };
-      // Kling parameters - adjust based on API documentation
       if (duration) input.duration = duration;
       if (resolution) input.resolution = resolution;
       if (aspect_ratio) input.aspect_ratio = aspect_ratio;
     } else {
-      // Default format for other models
       input = {
         prompt,
         image: req.file.buffer,
@@ -755,7 +710,6 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       };
       if (model.needsFps24) input.fps = 24;
       
-      // Veo3 audio support
       if (modelKeyLower === "veo3") {
         const hasAudio = req.body?.has_audio === true || req.body?.has_audio === "true";
         if (hasAudio) {
