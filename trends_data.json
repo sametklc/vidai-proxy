@@ -1,80 +1,6 @@
 {
   "categories": [
     {
-      "id": "birthday",
-      "title": "Birthday Cinematic",
-      "modelKey": "wan",
-      "videos": [
-        {
-          "id": "b1",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ff4d52b87-682a-418e-908d-7151bdc47be6.mp4?alt=media",
-          "description": "Happy Birthday Sparkle",
-          "prompt": "A cinematic portrait with golden confetti gently falling around the subject, soft warm lighting illuminating the face, subtle sparkles drifting through the air, and a joyful birthday atmosphere with smooth slow-motion movement."
-        },
-        {
-          "id": "b2",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_7E59C6B9-0D2D-4A15-B757-F02D9D298E04.mp4?alt=media",
-          "description": "Candle Glow Face Light",
-          "prompt": "Warm candlelight reflecting softly on the person's face, creating a cozy birthday ambiance with gentle shadows, intimate warm tones, and natural blinking captured in a slow cinematic style."
-        },
-        {
-          "id": "b3",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_AC84DC63-60B8-4923-9CB3-993523A9FD4F.mp4?alt=media",
-          "description": "Birthday Neon Text Reveal",
-          "prompt": "Glowing neon 'Happy Birthday' text appearing behind the person, vibrant neon reflections lighting the edges of the face, with a cinematic backdrop and subtle lighting transitions as the text reveals itself."
-        },
-        {
-          "id": "b4",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_6B65039A-3F1C-439A-9149-76B89C454006.mp4?alt=media",
-          "description": "Confetti Slow Motion",
-          "prompt": "A dreamy slow-motion scene with colorful confetti falling gracefully around the subject, soft ambient lighting, shallow depth of field, and an elegant celebratory mood."
-        },
-        {
-          "id": "b5",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_10130F8A-5269-49DD-BC1B-FBA7C4004D64.mp4?alt=media",
-          "description": "Magical Balloon Rise",
-          "prompt": "Balloons floating upward behind the person in warm daylight, soft atmospheric lighting, subtle breeze effects, and a magical uplifting birthday feeling with a cinematic camera movement."
-        }
-      ]
-    },
-    {
-      "id": "polaroid",
-      "title": "Polaroid Memory",
-      "modelKey": "wan",
-      "videos": [
-        {
-          "id": "p1",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_CEA44A45-70A7-4F78-9F3B-19C6D8FDF232.mp4?alt=media",
-          "description": "Polaroid Film Reveal",
-          "prompt": "A vintage polaroid film slowly developing with nostalgic colors, soft chemical-like fade-in effect, and warm retro tones creating an authentic analog reveal animation."
-        },
-        {
-          "id": "p2",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_663835A6-BCEB-4BB2-9AA3-4DCF088BEAC4.mp4?alt=media",
-          "description": "Shaky Handheld Polaroid",
-          "prompt": "Handheld polaroid camera motion with gentle shakes, subtle blur transitions, soft film colors, and a nostalgic documentary-like feeling."
-        },
-        {
-          "id": "p3",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_F460B88A-3D5A-422B-BB42-BAF1485DFCDA.mp4?alt=media",
-          "description": "Retro Flash Pop",
-          "prompt": "A retro camera flash bursting brightly and illuminating the subject’s face with 80s-style tones, soft bloom effect, and warm vintage color grading."
-        },
-        {
-          "id": "p4",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_CB62B62B-3FB5-4443-8A21-EF09CBE06BCD.mp4?alt=media",
-          "description": "Dusty Film Grain Animation",
-          "prompt": "Vintage film grain and dust particles moving across the frame, soft flickering light inconsistencies, and a realistically aged polaroid texture."
-        },
-        {
-          "id": "p5",
-          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_DAD9459C-AD4F-4CA1-B65F-E8800B8C131A.mp4?alt=media",
-          "description": "Polaroid Falling onto Table",
-          "prompt": "A soft cinematic shot of a polaroid photo gently falling onto a wooden table, natural lighting, slight motion blur, and a warm nostalgic mood."
-        }
-      ]
-    },
-    {
       "id": "car-mod",
       "title": "Car Modification",
       "modelKey": "wan",
@@ -331,6 +257,80 @@
           "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ftrailer%2FVidAI_6C1FFE35-30C1-454B-8A8A-C59982079D4D.mp4?alt=media",
           "description": "Heroic spotlight look",
           "prompt": "Heroic dramatic lighting from above, strong directional shadows, cinematic tension, and a powerful film-trailer look."
+        }
+      ]
+    },
+    {
+      "id": "birthday",
+      "title": "Birthday Cinematic",
+      "modelKey": "wan",
+      "videos": [
+        {
+          "id": "b1",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Ff4d52b87-682a-418e-908d-7151bdc47be6.mp4?alt=media",
+          "description": "Happy Birthday Sparkle",
+          "prompt": "A cinematic portrait with golden confetti gently falling around the subject, soft warm lighting illuminating the face, subtle sparkles drifting through the air, and a joyful birthday atmosphere with smooth slow-motion movement."
+        },
+        {
+          "id": "b2",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_7E59C6B9-0D2D-4A15-B757-F02D9D298E04.mp4?alt=media",
+          "description": "Candle Glow Face Light",
+          "prompt": "Warm candlelight reflecting softly on the person's face, creating a cozy birthday ambiance with gentle shadows, intimate warm tones, and natural blinking captured in a slow cinematic style."
+        },
+        {
+          "id": "b3",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_AC84DC63-60B8-4923-9CB3-993523A9FD4F.mp4?alt=media",
+          "description": "Birthday Neon Text Reveal",
+          "prompt": "Glowing neon 'Happy Birthday' text appearing behind the person, vibrant neon reflections lighting the edges of the face, with a cinematic backdrop and subtle lighting transitions as the text reveals itself."
+        },
+        {
+          "id": "b4",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_6B65039A-3F1C-439A-9149-76B89C454006.mp4?alt=media",
+          "description": "Confetti Slow Motion",
+          "prompt": "A dreamy slow-motion scene with colorful confetti falling gracefully around the subject, soft ambient lighting, shallow depth of field, and an elegant celebratory mood."
+        },
+        {
+          "id": "b5",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2FVidAI_10130F8A-5269-49DD-BC1B-FBA7C4004D64.mp4?alt=media",
+          "description": "Magical Balloon Rise",
+          "prompt": "Balloons floating upward behind the person in warm daylight, soft atmospheric lighting, subtle breeze effects, and a magical uplifting birthday feeling with a cinematic camera movement."
+        }
+      ]
+    },
+    {
+      "id": "polaroid",
+      "title": "Polaroid Memory",
+      "modelKey": "wan",
+      "videos": [
+        {
+          "id": "p1",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_CEA44A45-70A7-4F78-9F3B-19C6D8FDF232.mp4?alt=media",
+          "description": "Polaroid Film Reveal",
+          "prompt": "A vintage polaroid film slowly developing with nostalgic colors, soft chemical-like fade-in effect, and warm retro tones creating an authentic analog reveal animation."
+        },
+        {
+          "id": "p2",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_663835A6-BCEB-4BB2-9AA3-4DCF088BEAC4.mp4?alt=media",
+          "description": "Shaky Handheld Polaroid",
+          "prompt": "Handheld polaroid camera motion with gentle shakes, subtle blur transitions, soft film colors, and a nostalgic documentary-like feeling."
+        },
+        {
+          "id": "p3",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_F460B88A-3D5A-422B-BB42-BAF1485DFCDA.mp4?alt=media",
+          "description": "Retro Flash Pop",
+          "prompt": "A retro camera flash bursting brightly and illuminating the subject’s face with 80s-style tones, soft bloom effect, and warm vintage color grading."
+        },
+        {
+          "id": "p4",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_CB62B62B-3FB5-4443-8A21-EF09CBE06BCD.mp4?alt=media",
+          "description": "Dusty Film Grain Animation",
+          "prompt": "Vintage film grain and dust particles moving across the frame, soft flickering light inconsistencies, and a realistically aged polaroid texture."
+        },
+        {
+          "id": "p5",
+          "videoUrl": "https://firebasestorage.googleapis.com/v0/b/milyoner-11bfe.appspot.com/o/videosforvidai%2Fpoloroid%2FVidAI_DAD9459C-AD4F-4CA1-B65F-E8800B8C131A.mp4?alt=media",
+          "description": "Polaroid Falling onto Table",
+          "prompt": "A soft cinematic shot of a polaroid photo gently falling onto a wooden table, natural lighting, slight motion blur, and a warm nostalgic mood."
         }
       ]
     }
