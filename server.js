@@ -699,6 +699,46 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       if (duration) input.duration = duration;
       if (resolution) input.resolution = resolution;
       if (aspect_ratio) input.aspect_ratio = aspect_ratio;
+    } else if (modelKeyLower === "wan") {
+      // WAN model requires image as string (URL)
+      // Upload file to Replicate and get URL
+      let imageUrl = null;
+      try {
+        console.log(`[IMAGE-TO-VIDEO] WAN model: Uploading image to Replicate...`);
+        const uploadResponse = await fetch("https://api.replicate.com/v1/files", {
+          method: "POST",
+          headers: {
+            "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+            "Content-Type": req.file.mimetype || "image/jpeg"
+          },
+          body: req.file.buffer
+        });
+        
+        if (uploadResponse.ok) {
+          const fileData = await uploadResponse.json();
+          imageUrl = fileData.urls?.get || fileData.url;
+          console.log(`[IMAGE-TO-VIDEO] Image uploaded to Replicate: ${imageUrl}`);
+        } else {
+          throw new Error(`Upload failed: ${uploadResponse.status}`);
+        }
+      } catch (uploadError) {
+        console.error(`[IMAGE-TO-VIDEO] Failed to upload image to Replicate:`, uploadError);
+        // Fallback to data URI if upload fails
+        const base64 = req.file.buffer.toString('base64');
+        const mimeType = req.file.mimetype || "image/jpeg";
+        imageUrl = `data:${mimeType};base64,${base64}`;
+        console.log(`[IMAGE-TO-VIDEO] Using data URI fallback for WAN model`);
+      }
+      
+      input = {
+        prompt,
+        image: imageUrl,
+        duration,
+        resolution,
+        aspect_ratio,
+        watermark
+      };
+      if (model.needsFps24) input.fps = 24;
     } else {
       input = {
         prompt,
