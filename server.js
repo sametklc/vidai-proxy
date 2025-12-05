@@ -139,15 +139,32 @@ function mapStatus(s) {
 
 function urlFromAny(x) {
   if (!x) return null;
-  if (typeof x === "string") return x.startsWith("http") ? x : null;
-
-  try {
-    if (typeof x.url === "function") {
-      const u = x.url();
-      if (typeof u === "string" && u.startsWith("http")) return u;
+  
+  // Handle string URLs
+  if (typeof x === "string") {
+    const trimmed = x.trim();
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed;
     }
-  } catch {}
+    return null;
+  }
 
+  // Handle objects with url() method
+  try {
+    if (x && typeof x.url === "function") {
+      const u = x.url();
+      if (typeof u === "string") {
+        const trimmed = u.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+          return trimmed;
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore errors
+  }
+
+  // Handle arrays
   if (Array.isArray(x)) {
     for (const it of x) {
       const u = urlFromAny(it);
@@ -156,23 +173,48 @@ function urlFromAny(x) {
     return null;
   }
 
-  if (typeof x === "object") {
-    const direct = ["video_url", "video", "url", "mp4", "file", "output_url", "result_url", "media_url"];
+  // Handle objects
+  if (typeof x === "object" && x !== null) {
+    // Direct keys to check
+    const direct = ["video_url", "video", "url", "mp4", "file", "output_url", "result_url", "media_url", "output"];
     for (const k of direct) {
       const v = x[k];
-      if (typeof v === "string" && v.startsWith("http")) return v;
+      if (typeof v === "string") {
+        const trimmed = v.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+          return trimmed;
+        }
+      }
     }
-    if (x.urls && typeof x.urls.get === "string" && x.urls.get.startsWith("http")) return x.urls.get;
-    if (typeof x.output === "string" && x.output.startsWith("http")) return x.output;
-
-    const u1 = urlFromAny(x.output);
-    if (u1) return u1;
-
-    for (const k of Object.keys(x)) {
-      const u = urlFromAny(x[k]);
+    
+    // Check nested urls object
+    if (x.urls) {
+      if (typeof x.urls.get === "string") {
+        const trimmed = x.urls.get.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+          return trimmed;
+        }
+      }
+      // Recursively check urls object
+      const u = urlFromAny(x.urls);
       if (u) return u;
     }
+    
+    // Recursively check output
+    if (x.output) {
+      const u = urlFromAny(x.output);
+      if (u) return u;
+    }
+
+    // Recursively check all keys
+    for (const k of Object.keys(x)) {
+      if (k !== "output" && k !== "urls") { // Already checked
+        const u = urlFromAny(x[k]);
+        if (u) return u;
+      }
+    }
   }
+  
   return null;
 }
 
@@ -421,19 +463,56 @@ function getDefaultsForModel(modelKey) {
 }
 
 async function buildResultResponse(predId) {
-  let pred = await replicate.predictions.get(predId);
-  let url = urlFromAny(pred.output);
-  if (pred.status === "succeeded" && !url) {
-    for (let i = 0; i < 12; i++) {
-      await sleep(500);
-      pred = await replicate.predictions.get(predId);
-      url = urlFromAny(pred.output);
-      if (url) break;
+  try {
+    let pred = await replicate.predictions.get(predId);
+    
+    if (!pred) {
+      console.error(`[RESULT] Prediction ${predId} not found`);
+      return { status: "FAILED", request_id: predId, job_id: predId, error: "Prediction not found" };
     }
+    
+    let url = urlFromAny(pred.output);
+    if (pred.status === "succeeded" && !url) {
+      console.log(`[RESULT] Prediction ${predId} succeeded but no URL yet, retrying...`);
+      for (let i = 0; i < 12; i++) {
+        await sleep(500);
+        pred = await replicate.predictions.get(predId);
+        if (!pred) break;
+        url = urlFromAny(pred.output);
+        if (url) {
+          console.log(`[RESULT] Found URL after ${i + 1} retries`);
+          break;
+        }
+      }
+    }
+    
+    const body = { 
+      status: mapStatus(pred.status), 
+      request_id: predId, 
+      job_id: predId 
+    };
+    
+    if (pred.status === "succeeded" && url) {
+      body.video_url = url;
+      console.log(`[RESULT] Prediction ${predId} succeeded with video URL: ${url.substring(0, 50)}...`);
+    } else if (pred.status === "failed" || pred.status === "canceled") {
+      const errorMsg = pred.error || pred.logs?.slice(-1)[0] || "Unknown error";
+      body.error = `Prediction failed: ${errorMsg}`;
+      console.error(`[RESULT] Prediction ${predId} failed: ${errorMsg}`);
+    } else {
+      console.log(`[RESULT] Prediction ${predId} status: ${pred.status}, URL: ${url ? "found" : "not found"}`);
+    }
+    
+    return body;
+  } catch (e) {
+    console.error(`[RESULT] Error building response for ${predId}:`, e);
+    return { 
+      status: "FAILED", 
+      request_id: predId, 
+      job_id: predId, 
+      error: `Server error: ${String(e?.message || e)}` 
+    };
   }
-  const body = { status: mapStatus(pred.status), request_id: predId, job_id: predId };
-  if (pred.status === "succeeded" && url) body.video_url = url;
-  return body;
 }
 
 // Test Moderation Endpoint
