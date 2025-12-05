@@ -73,7 +73,7 @@ const MODEL_DEFAULTS = {
   },
   veo3: {
     duration: 4,
-    resolution: "720p",
+    resolution: "720p", // Veo3 only supports 720p
     aspect_ratio: "16:9",
     watermark: false
   },
@@ -562,9 +562,14 @@ app.post("/video/generate_text", async (req, res) => {
 
     // Use provided values or fall back to model-specific defaults
     const duration = Number.isFinite(+b.duration) ? +b.duration : defaults.duration;
-    const resolution = b.resolution || defaults.resolution;
+    let resolution = b.resolution || defaults.resolution;
     const aspect_ratio = b.aspect_ratio || defaults.aspect_ratio;
     const watermark = typeof b.watermark === "boolean" ? b.watermark : defaults.watermark;
+
+    // Veo3 only supports 720p - force it
+    if (modelKey.toLowerCase() === "veo3") {
+      resolution = "720p";
+    }
 
     const input = {
       prompt,
@@ -574,6 +579,14 @@ app.post("/video/generate_text", async (req, res) => {
       watermark
     };
     if (model.needsFps24) input.fps = 24; // SeeDance gibi
+    
+    // Veo3 audio support
+    if (modelKey.toLowerCase() === "veo3") {
+      const hasAudio = b.has_audio === true || b.has_audio === "true";
+      if (hasAudio) {
+        input.has_audio = true;
+      }
+    }
 
     const createBody = model.version
       ? { version: model.version, input }
@@ -616,11 +629,16 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     // Use provided values or fall back to model-specific defaults
     const duration = Number.isFinite(+req.body?.duration) ? +req.body.duration : defaults.duration;
-    const resolution = req.body?.resolution || defaults.resolution;
+    let resolution = req.body?.resolution || defaults.resolution;
     const aspect_ratio = req.body?.aspect_ratio || defaults.aspect_ratio;
     const watermark = typeof req.body?.watermark === "string"
       ? req.body.watermark === "true"
       : (typeof req.body?.watermark === "boolean" ? req.body.watermark : defaults.watermark);
+    
+    // Veo3 only supports 720p - force it
+    if (modelKeyLower === "veo3") {
+      resolution = "720p";
+    }
 
     // Model-specific input formatting
     let input = {};
@@ -655,6 +673,14 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
         watermark
       };
       if (model.needsFps24) input.fps = 24;
+      
+      // Veo3 audio support
+      if (modelKeyLower === "veo3") {
+        const hasAudio = req.body?.has_audio === true || req.body?.has_audio === "true";
+        if (hasAudio) {
+          input.has_audio = true;
+        }
+      }
     }
 
     const createBody = model.version
