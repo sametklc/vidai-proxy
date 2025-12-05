@@ -714,6 +714,9 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
       ? req.body.watermark === "true"
       : (typeof req.body?.watermark === "boolean" ? req.body.watermark : defaults.watermark);
     
+    // Convert modelKey to lowercase for comparisons
+    const modelKeyLower = modelKey.toLowerCase();
+    
     // Veo3 only supports 720p - force it
     if (modelKeyLower === "veo3") {
       resolution = "720p";
@@ -721,7 +724,6 @@ app.post("/video/generate_image", upload.single("image"), async (req, res) => {
 
     // Model-specific input formatting
     let input = {};
-    const modelKeyLower = modelKey.toLowerCase();
     
     if (modelKeyLower === "runway") {
       // Runway Gen4 Turbo
